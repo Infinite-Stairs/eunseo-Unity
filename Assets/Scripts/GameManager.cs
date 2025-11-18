@@ -280,7 +280,9 @@ public class GameManager : MonoBehaviour {
 
     void Vibration()
     {
+#if UNITY_ANDROID || UNITY_IOS
         Handheld.Vibrate();
+#endif
         sound[0].playOnAwake = false;
     }
 
