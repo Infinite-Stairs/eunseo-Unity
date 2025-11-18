@@ -694,10 +694,10 @@ PlayerSettings:
   facebookXfbml: 0
   facebookFrictionlessRequests: 1
   apiCompatibilityLevel: 6
-  cloudProjectId: 91427f3d-1c31-4e7c-a5ab-e50066f41183
+  cloudProjectId:
   framebufferDepthMemorylessMode: 0
   projectName: Inifinite Stairs
-  organizationId: choijoohee
+  organizationId:
   cloudEnabled: 0
   enableNativePlatformBackendsForNewInputSystem: 0
   disableOldInputManagerSupport: 0
