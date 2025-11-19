@@ -8,6 +8,7 @@ public class GameManager : MonoBehaviour {
     public ObjectManager objectManager;
     public DSLManager dslManager;
     public DontDestory dontDestory;
+    public APIManager apiManager;
     public GameObject[] players, stairs, UI;
     public GameObject pauseBtn, backGround;
 
@@ -42,7 +43,27 @@ public class GameManager : MonoBehaviour {
         StartCoroutine("CheckGauge");
 
         UI[0].SetActive(dslManager.IsRetry());
-        UI[1].SetActive(!dslManager.IsRetry());        
+        UI[1].SetActive(!dslManager.IsRetry());
+
+        // APIManager 찾기 (씬에 없으면 생성)
+        if (apiManager == null) {
+            GameObject apiObj = GameObject.Find("APIManager");
+            if (apiObj == null) {
+                apiObj = new GameObject("APIManager");
+                apiManager = apiObj.AddComponent<APIManager>();
+            } else {
+                apiManager = apiObj.GetComponent<APIManager>();
+            }
+        }
+
+        // 게임 시작 알림 (status = 1)
+        apiManager.SendGameStart((success, response) => {
+            if (success) {
+                Debug.Log("게임 시작 API 호출 성공");
+            } else {
+                Debug.LogWarning("게임 시작 API 호출 실패: " + response);
+            }
+        });
     }
 
 
@@ -169,7 +190,18 @@ public class GameManager : MonoBehaviour {
         if (vibrationOn) Vibration();
         dslManager.SaveMoney(player.money);
 
-        CancelInvoke();  //GaugeBar Stopped      
+        // 게임 종료 알림 (status = 0, stairCount = score)
+        if (apiManager != null) {
+            apiManager.SendGameEnd(score, (success, response) => {
+                if (success) {
+                    Debug.Log("게임 종료 API 호출 성공 - 계단 수: " + score);
+                } else {
+                    Debug.LogWarning("게임 종료 API 호출 실패: " + response);
+                }
+            });
+        }
+
+        CancelInvoke();  //GaugeBar Stopped
         Invoke("DisableUI", 1.5f);
     }
 
