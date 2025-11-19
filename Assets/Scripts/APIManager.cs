@@ -17,10 +17,25 @@ public class GameEndRequest {
 }
 
 [Serializable]
+public class ScoreSubmitRequest {
+    public int score;           // 점수 (계단 수)
+    public int characterIndex;  // 캐릭터 인덱스
+    public int money;           // 획득한 코인
+    public string timestamp;    // 게임 종료 시간
+}
+
+[Serializable]
 public class GameResponse {
     public bool success;
     public string message;
     public object data;
+}
+
+[Serializable]
+public class ScoreData {
+    public int rank;
+    public bool isNewBestScore;
+    public int bestScore;
 }
 
 public class APIManager : MonoBehaviour {
@@ -47,6 +62,17 @@ public class APIManager : MonoBehaviour {
     /// <param name="stairCount">도달한 계단 수</param>
     public void SendGameEnd(int stairCount, Action<bool, string> callback = null) {
         StartCoroutine(PostGameEnd(stairCount, callback));
+    }
+
+    /// <summary>
+    /// 게임 점수 제출 - 게임 한 판 끝날 때마다 호출
+    /// </summary>
+    /// <param name="score">점수 (계단 수)</param>
+    /// <param name="characterIndex">사용한 캐릭터 인덱스</param>
+    /// <param name="money">획득한 코인</param>
+    /// <param name="callback">콜백 함수</param>
+    public void SubmitScore(int score, int characterIndex, int money, Action<bool, ScoreData> callback = null) {
+        StartCoroutine(PostScore(score, characterIndex, money, callback));
     }
 
     private IEnumerator PostGameStart(Action<bool, string> callback) {
@@ -112,6 +138,50 @@ public class APIManager : MonoBehaviour {
         } else {
             Debug.LogError("게임 종료 전송 실패: " + request.error);
             callback?.Invoke(false, request.error);
+        }
+
+        request.Dispose();
+    }
+
+    private IEnumerator PostScore(int score, int characterIndex, int money, Action<bool, ScoreData> callback) {
+        ScoreSubmitRequest requestData = new ScoreSubmitRequest {
+            score = score,
+            characterIndex = characterIndex,
+            money = money,
+            timestamp = System.DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ")
+        };
+
+        string jsonData = JsonConvert.SerializeObject(requestData);
+        byte[] bodyRaw = System.Text.Encoding.UTF8.GetBytes(jsonData);
+
+        UnityWebRequest request = new UnityWebRequest(baseURL + "/score/submit", "POST");
+        request.uploadHandler = new UploadHandlerRaw(bodyRaw);
+        request.downloadHandler = new DownloadHandlerBuffer();
+        request.SetRequestHeader("Content-Type", "application/json");
+
+        yield return request.SendWebRequest();
+
+        if (request.result == UnityWebRequest.Result.Success) {
+            Debug.Log("점수 제출 성공: " + request.downloadHandler.text);
+
+            try {
+                GameResponse response = JsonConvert.DeserializeObject<GameResponse>(request.downloadHandler.text);
+
+                // data를 ScoreData로 변환
+                ScoreData scoreData = null;
+                if (response.data != null) {
+                    string dataJson = JsonConvert.SerializeObject(response.data);
+                    scoreData = JsonConvert.DeserializeObject<ScoreData>(dataJson);
+                }
+
+                callback?.Invoke(true, scoreData);
+            } catch (Exception e) {
+                Debug.LogError("응답 파싱 에러: " + e.Message);
+                callback?.Invoke(false, null);
+            }
+        } else {
+            Debug.LogError("점수 제출 실패: " + request.error);
+            callback?.Invoke(false, null);
         }
 
         request.Dispose();

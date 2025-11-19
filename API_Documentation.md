@@ -103,6 +103,83 @@ POST /api/game/end
 
 ---
 
+## 3. 점수 제출 API (★ 중요)
+
+### Endpoint
+```
+POST /api/score/submit
+```
+
+### 설명
+게임 한 판이 끝날 때마다 호출되는 API입니다. 점수, 캐릭터 정보, 획득 코인 등을 DB에 저장하고 프론트엔드에서 활용할 수 있습니다.
+
+### Request Body
+```json
+{
+  "score": 150,
+  "characterIndex": 2,
+  "money": 45,
+  "timestamp": "2025-11-19T20:35:00Z"
+}
+```
+
+### Request Fields
+| Field | Type | Description |
+|-------|------|-------------|
+| score | Integer | 플레이어가 도달한 계단 수 (점수) |
+| characterIndex | Integer | 사용한 캐릭터 인덱스 (0-6) |
+| money | Integer | 게임에서 획득한 코인 수 |
+| timestamp | String | 게임 종료 시간 (ISO 8601 형식) |
+
+### 캐릭터 인덱스 매핑
+| Index | Character Name | Korean Name |
+|-------|---------------|-------------|
+| 0 | BusinessMan | 회사원 |
+| 1 | Rapper | 래퍼 |
+| 2 | Secretary | 비서 |
+| 3 | Boxer | 복서 |
+| 4 | CheerLeader | 치어리더 |
+| 5 | Sheriff | 보안관 |
+| 6 | Plumber | 배관공 |
+
+### Response (Success)
+```json
+{
+  "success": true,
+  "message": "점수가 성공적으로 저장되었습니다",
+  "data": {
+    "rank": 15,
+    "isNewBestScore": false,
+    "bestScore": 150
+  }
+}
+```
+
+### Response Fields
+| Field | Type | Description |
+|-------|------|-------------|
+| success | Boolean | 요청 성공 여부 |
+| message | String | 응답 메시지 |
+| data.rank | Integer | 현재 점수의 전체 순위 |
+| data.isNewBestScore | Boolean | 개인 최고 기록 갱신 여부 |
+| data.bestScore | Integer | 현재까지의 개인 최고 점수 |
+
+### 사용 예시 (Unity)
+```csharp
+// GameOver 함수에서 자동으로 호출됨
+int characterIndex = dslManager.GetSelectedCharIndex();
+apiManager.SubmitScore(score, characterIndex, player.money, (success, scoreData) => {
+    if (success && scoreData != null) {
+        Debug.Log($"점수: {score}, 순위: {scoreData.rank}");
+        if (scoreData.isNewBestScore) {
+            Debug.Log("새로운 최고 기록!");
+        }
+    }
+});
+```
+
+---
+
 ## Error Responses
 
 ### 400 Bad Request
@@ -142,6 +219,37 @@ CREATE TABLE game_sessions (
 );
 ```
 
+### Scores Table (★ 중요 - 점수 제출 API용)
+```sql
+CREATE TABLE scores (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  user_id VARCHAR(36),  -- 유저 식별자 (옵션)
+  score INT NOT NULL,
+  character_index INT NOT NULL,
+  character_name VARCHAR(50),
+  money INT DEFAULT 0,
+  timestamp TIMESTAMP NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_score (score DESC),
+  INDEX idx_user_score (user_id, score DESC),
+  INDEX idx_timestamp (timestamp DESC)
+);
+```
+
+### UserStats Table (사용자 통계용)
+```sql
+CREATE TABLE user_stats (
+  user_id VARCHAR(36) PRIMARY KEY,
+  best_score INT DEFAULT 0,
+  total_games INT DEFAULT 0,
+  total_money INT DEFAULT 0,
+  average_score FLOAT DEFAULT 0,
+  last_played TIMESTAMP,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+```
+
 ---
 
 ## Unity 사용 예시
@@ -175,16 +283,29 @@ apiManager.SendGameEnd(finalScore, (success, response) => {
 });
 ```
 
+### 점수 제출 호출 (★ 가장 중요)
+```csharp
+// GameOver 시 자동으로 호출됨
+int characterIndex = dslManager.GetSelectedCharIndex();
+apiManager.SubmitScore(score, characterIndex, player.money, (success, scoreData) => {
+    if (success && scoreData != null) {
+        Debug.Log($"점수 제출 성공!");
+        Debug.Log($"순위: {scoreData.rank}");
+        Debug.Log($"최고 기록: {scoreData.bestScore}");
+    }
+});
+```
+
 ---
 
 ## 프론트엔드 통합 (예시)
 
 ### React에서 게임 데이터 가져오기
 ```javascript
-// 최근 게임 세션 가져오기
-const fetchRecentGames = async () => {
+// 최근 점수 기록 가져오기 (점수 제출 API로 저장된 데이터)
+const fetchRecentScores = async (limit = 10) => {
   try {
-    const response = await fetch('http://localhost:3000/api/game/recent', {
+    const response = await fetch(`http://localhost:3000/api/scores/recent?limit=${limit}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -192,8 +313,67 @@ const fetchRecentGames = async () => {
     });
     const data = await response.json();
     return data;
+    // 예상 응답:
+    // {
+    //   success: true,
+    //   data: [
+    //     { id: 1, score: 250, characterIndex: 2, money: 78, timestamp: "2025-11-19..." },
+    //     { id: 2, score: 180, characterIndex: 0, money: 45, timestamp: "2025-11-19..." },
+    //     ...
+    //   ]
+    // }
   } catch (error) {
-    console.error('Error fetching games:', error);
+    console.error('Error fetching scores:', error);
+  }
+};
+
+// 전체 랭킹 가져오기
+const fetchLeaderboard = async (limit = 100) => {
+  try {
+    const response = await fetch(`http://localhost:3000/api/scores/leaderboard?limit=${limit}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+    const data = await response.json();
+    return data;
+    // 예상 응답:
+    // {
+    //   success: true,
+    //   data: [
+    //     { rank: 1, score: 500, characterName: "비서", money: 150, ... },
+    //     { rank: 2, score: 450, characterName: "회사원", money: 120, ... },
+    //     ...
+    //   ]
+    // }
+  } catch (error) {
+    console.error('Error fetching leaderboard:', error);
+  }
+};
+
+// 캐릭터별 통계 가져오기
+const fetchCharacterStats = async () => {
+  try {
+    const response = await fetch('http://localhost:3000/api/scores/character-stats', {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+    const data = await response.json();
+    return data;
+    // 예상 응답:
+    // {
+    //   success: true,
+    //   data: [
+    //     { characterIndex: 0, characterName: "회사원", totalGames: 120, avgScore: 180 },
+    //     { characterIndex: 1, characterName: "래퍼", totalGames: 85, avgScore: 165 },
+    //     ...
+    //   ]
+    // }
+  } catch (error) {
+    console.error('Error fetching character stats:', error);
   }
 };
 
