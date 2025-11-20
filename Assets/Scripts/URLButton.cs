@@ -3,7 +3,7 @@ using UnityEngine.UI;
 
 public class URLButton : MonoBehaviour
 {
-    public string url = "https://example.com";
+    public string url = "https://hanseong-front-s1gv.vercel.app";
     public Sprite buttonImage;
 
     private void Start()
