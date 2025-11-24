@@ -7166,7 +7166,18 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 1118161484}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 0}
+        m_MethodName: 
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: 
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!114 &1118161484
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -10392,6 +10403,7 @@ MonoBehaviour:
   objectManager: {fileID: 704661546}
   dslManager: {fileID: 464379068}
   dontDestory: {fileID: 1657670010}
+  apiManager: {fileID: 0}
   players:
   - {fileID: 874986974}
   - {fileID: 1928709414}
@@ -10447,7 +10459,7 @@ MonoBehaviour:
   - {fileID: 30708542}
   - {fileID: 1107497211}
   - {fileID: 1447004355}
-  gaugeStart: 0
+  gaugeStart: 1
   vibrationOn: 1
   isGamePaused: 0
   IsChangeDir: 0000000000000000000000000000000000000000

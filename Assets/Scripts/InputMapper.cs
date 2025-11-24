@@ -42,6 +42,22 @@ public class InputMapper : MonoBehaviour
     // 디버그 모드: true로 설정하면 컨트롤러 버튼 눌림을 콘솔에 출력
     [SerializeField] private bool debugMode = true;
 
+    // 버튼 이름 매핑 (더 식별하기 쉽게)
+    private readonly string[] buttonNames = new string[12] {
+        "L (왼쪽 상단)",
+        "R (오른쪽 상단)",
+        "X (왼쪽)",
+        "Y (위쪽)",
+        "A (아래쪽)",
+        "B (오른쪽)",
+        "Select (선택)",
+        "Start (시작)",
+        "Up (D-Pad 위)",
+        "Down (D-Pad 아래)",
+        "Left (D-Pad 왼쪽)",
+        "Right (D-Pad 오른쪽)"
+    };
+
     void Update()
     {
         // 모든 컨트롤러 버튼 체크
@@ -53,7 +69,13 @@ public class InputMapper : MonoBehaviour
             // 디버그 모드일 때 버튼 눌림 출력
             if (debugMode && currentButtonState[i] && !previousButtonState[i])
             {
-                Debug.Log($"Controller {(ControllerButton)i} pressed (JoystickButton{controllerButtons[i] - KeyCode.JoystickButton0})");
+                Debug.Log($"[InputMapper] ▶ 버튼 눌림: {buttonNames[i]} | KeyCode: JoystickButton{controllerButtons[i] - KeyCode.JoystickButton0} | Time: {Time.time:F2}s");
+            }
+
+            // 버튼 뗌 로그
+            if (debugMode && !currentButtonState[i] && previousButtonState[i])
+            {
+                Debug.Log($"[InputMapper] ◀ 버튼 뗌: {buttonNames[i]} | Time: {Time.time:F2}s");
             }
         }
 
@@ -64,7 +86,7 @@ public class InputMapper : MonoBehaviour
             {
                 if (Input.GetKeyDown((KeyCode)((int)KeyCode.JoystickButton0 + i)))
                 {
-                    Debug.Log($"Raw JoystickButton{i} detected!");
+                    Debug.Log($"[InputMapper] 🎮 Raw 입력 감지: JoystickButton{i} | Time: {Time.time:F2}s");
                 }
             }
         }
