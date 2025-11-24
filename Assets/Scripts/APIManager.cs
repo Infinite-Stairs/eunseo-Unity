@@ -5,26 +5,17 @@ using UnityEngine;
 using UnityEngine.Networking;
 using Newtonsoft.Json;
 
+// WebSocket용 요청 (state 필드 사용)
 [Serializable]
-public class GameStartRequest
+public class GameStateRequest
 {
-    public int status; // 1: 게임 시작
-}
-
-[Serializable]
-public class GameEndRequest
-{
-    public int status;      // 0: 게임 종료
-    public int stairCount;  // 계단 수
+    public int state; // 1: 게임 시작, 0: 게임 종료
 }
 
 [Serializable]
 public class ScoreSubmitRequest
 {
-    public int score;           // 점수 (계단 수)
-    public int characterIndex;  // 캐릭터 인덱스
-    public int money;           // 획득한 코인
-    public string timestamp;    // 게임 종료 시간
+    public int stairCount;  // 계단 수
 }
 
 [Serializable]
@@ -48,58 +39,71 @@ public class APIManager : MonoBehaviour
     // API 호출용 백엔드 서버 URL
     private string backendURL = "https://gahuifunction.onrender.com";
 
+    // WebSocket URL (wss로 변환)
+    private string websocketURL = "wss://gahuifunction.onrender.com/ws/unity";
+
     // 대시보드 열기용 프론트엔드 URL
     private string frontendURL = "https://dowhile001.vercel.app";
 
-    // 게임 세션 ID (백엔드에서 받아올 수도 있습니다)
-    private string currentSessionId;
+    // WebSocket 연결
+    private WebSocketConnection wsConnection;
 
     void Awake()
     {
         DontDestroyOnLoad(gameObject);
     }
 
+    void Start()
+    {
+        // WebSocket 연결 시작
+        ConnectWebSocket();
+    }
+
     /// <summary>
-    /// 게임 시작 시 호출 - 상태값 1 전송
+    /// WebSocket 연결
+    /// </summary>
+    public void ConnectWebSocket()
+    {
+        if (wsConnection == null)
+        {
+            wsConnection = gameObject.AddComponent<WebSocketConnection>();
+            wsConnection.OnConnected += OnWebSocketConnected;
+            wsConnection.OnError += OnWebSocketError;
+        }
+        wsConnection.Connect(websocketURL);
+    }
+
+    private void OnWebSocketConnected()
+    {
+        Debug.Log("WebSocket 연결됨!");
+    }
+
+    private void OnWebSocketError(string error)
+    {
+        Debug.LogError($"WebSocket 에러: {error}");
+        // 3초 후 재연결 시도
+        StartCoroutine(ReconnectAfterDelay(3f));
+    }
+
+    private IEnumerator ReconnectAfterDelay(float delay)
+    {
+        yield return new WaitForSeconds(delay);
+        Debug.Log("WebSocket 재연결 시도...");
+        ConnectWebSocket();
+    }
+
+    /// <summary>
+    /// 게임 시작 시 호출 - HTTP API + WebSocket 둘 다 호출
     /// </summary>
     public void SendGameStart(Action<bool, string> callback = null)
     {
-        StartCoroutine(PostGameStart(callback));
+        StartCoroutine(SendGameStartCoroutine(callback));
     }
 
-    /// <summary>
-    /// 게임 종료 시 호출 - 상태값 0과 계단 수 전송
-    /// </summary>
-    /// <param name="stairCount">도달한 계단 수</param>
-    public void SendGameEnd(int stairCount, Action<bool, string> callback = null)
+    private IEnumerator SendGameStartCoroutine(Action<bool, string> callback)
     {
-        StartCoroutine(PostGameEnd(stairCount, callback));
-    }
-
-    /// <summary>
-    /// 게임 점수 제출 - 게임 한 판 끝날 때마다 호출
-    /// </summary>
-    /// <param name="score">점수 (계단 수)</param>
-    /// <param name="characterIndex">사용한 캐릭터 인덱스</param>
-    /// <param name="money">획득한 코인</param>
-    /// <param name="callback">콜백 함수</param>
-    public void SubmitScore(int score, int characterIndex, int money, Action<bool, ScoreData> callback = null)
-    {
-        StartCoroutine(PostScore(score, characterIndex, money, callback));
-    }
-
-    private IEnumerator PostGameStart(Action<bool, string> callback)
-    {
-        GameStartRequest requestData = new GameStartRequest
-        {
-            status = 1
-        };
-
-        string jsonData = JsonConvert.SerializeObject(requestData);
-        byte[] bodyRaw = System.Text.Encoding.UTF8.GetBytes(jsonData);
-
+        // 1. HTTP API 호출 (백엔드 game_handler.is_playing = True 설정)
         UnityWebRequest request = new UnityWebRequest(backendURL + "/api/game/start", "POST");
-        request.uploadHandler = new UploadHandlerRaw(bodyRaw);
         request.downloadHandler = new DownloadHandlerBuffer();
         request.SetRequestHeader("Content-Type", "application/json");
 
@@ -113,91 +117,96 @@ public class APIManager : MonoBehaviour
 
         if (isSuccess)
         {
-            Debug.Log("게임 시작 전송 성공: " + request.downloadHandler.text);
+            Debug.Log("게임 시작 API 호출 성공: " + request.downloadHandler.text);
 
-            // 응답에서 세션 ID를 받아올 수 있습니다
-            try
+            // 2. WebSocket으로도 전송 (라즈베리파이에 알림)
+            if (wsConnection != null && wsConnection.IsConnected)
             {
-                GameResponse response = JsonConvert.DeserializeObject<GameResponse>(request.downloadHandler.text);
-                callback?.Invoke(true, request.downloadHandler.text);
+                var wsRequest = new GameStateRequest { state = 1 };
+                string jsonData = JsonConvert.SerializeObject(wsRequest);
+                wsConnection.Send(jsonData);
+                Debug.Log("게임 시작 WebSocket 전송: " + jsonData);
             }
-            catch (Exception e)
-            {
-                Debug.LogError("응답 파싱 에러: " + e.Message);
-                callback?.Invoke(false, e.Message);
-            }
+
+            callback?.Invoke(true, "게임 시작 성공");
         }
         else
         {
-            Debug.LogError("게임 시작 전송 실패: " + request.error);
+            Debug.LogError("게임 시작 API 호출 실패: " + request.error);
+            Debug.LogError("응답 내용: " + request.downloadHandler.text);
             callback?.Invoke(false, request.error);
         }
 
         request.Dispose();
     }
 
-    private IEnumerator PostGameEnd(int stairCount, Action<bool, string> callback)
+    /// <summary>
+    /// 게임 종료 시 호출 - HTTP API + WebSocket 둘 다 호출
+    /// </summary>
+    public void SendGameEnd(int stairCount, Action<bool, string> callback = null)
     {
-        GameEndRequest requestData = new GameEndRequest
+        StartCoroutine(SendGameEndCoroutine(stairCount, callback));
+    }
+
+    private IEnumerator SendGameEndCoroutine(int stairCount, Action<bool, string> callback)
+    {
+        // 1. HTTP API 호출 (백엔드 game_handler.is_playing = False 설정)
+        UnityWebRequest request = new UnityWebRequest(backendURL + "/api/game/end", "POST");
+        request.downloadHandler = new DownloadHandlerBuffer();
+        request.SetRequestHeader("Content-Type", "application/json");
+
+        yield return request.SendWebRequest();
+
+#if UNITY_2020_1_OR_NEWER
+        bool isSuccess = request.result == UnityWebRequest.Result.Success;
+#else
+        bool isSuccess = !request.isNetworkError && !request.isHttpError;
+#endif
+
+        if (isSuccess)
         {
-            status = 0,
+            Debug.Log("게임 종료 API 호출 성공: " + request.downloadHandler.text);
+
+            // 2. WebSocket으로도 전송 (라즈베리파이에 알림)
+            if (wsConnection != null && wsConnection.IsConnected)
+            {
+                var wsRequest = new GameStateRequest { state = 0 };
+                string jsonData = JsonConvert.SerializeObject(wsRequest);
+                wsConnection.Send(jsonData);
+                Debug.Log("게임 종료 WebSocket 전송: " + jsonData);
+            }
+
+            callback?.Invoke(true, "게임 종료 성공");
+        }
+        else
+        {
+            Debug.LogError("게임 종료 API 호출 실패: " + request.error);
+            Debug.LogError("응답 내용: " + request.downloadHandler.text);
+            callback?.Invoke(false, request.error);
+        }
+
+        request.Dispose();
+    }
+
+    /// <summary>
+    /// 게임 점수 제출 - HTTP POST
+    /// </summary>
+    public void SubmitScore(int stairCount, Action<bool, ScoreData> callback = null)
+    {
+        StartCoroutine(PostScore(stairCount, callback));
+    }
+
+    private IEnumerator PostScore(int stairCount, Action<bool, ScoreData> callback)
+    {
+        ScoreSubmitRequest requestData = new ScoreSubmitRequest
+        {
             stairCount = stairCount
         };
 
         string jsonData = JsonConvert.SerializeObject(requestData);
         byte[] bodyRaw = System.Text.Encoding.UTF8.GetBytes(jsonData);
 
-        UnityWebRequest request = new UnityWebRequest(backendURL + "/api/game/end", "POST");
-        request.uploadHandler = new UploadHandlerRaw(bodyRaw);
-        request.downloadHandler = new DownloadHandlerBuffer();
-        request.SetRequestHeader("Content-Type", "application/json");
-
-        yield return request.SendWebRequest();
-
-#if UNITY_2020_1_OR_NEWER
-        bool isSuccess = request.result == UnityWebRequest.Result.Success;
-#else
-        bool isSuccess = !request.isNetworkError && !request.isHttpError;
-#endif
-
-        if (isSuccess)
-        {
-            Debug.Log("게임 종료 전송 성공: " + request.downloadHandler.text);
-
-            try
-            {
-                GameResponse response = JsonConvert.DeserializeObject<GameResponse>(request.downloadHandler.text);
-                callback?.Invoke(true, request.downloadHandler.text);
-            }
-            catch (Exception e)
-            {
-                Debug.LogError("응답 파싱 에러: " + e.Message);
-                callback?.Invoke(false, e.Message);
-            }
-        }
-        else
-        {
-            Debug.LogError("게임 종료 전송 실패: " + request.error);
-            callback?.Invoke(false, request.error);
-        }
-
-        request.Dispose();
-    }
-
-    private IEnumerator PostScore(int score, int characterIndex, int money, Action<bool, ScoreData> callback)
-    {
-        ScoreSubmitRequest requestData = new ScoreSubmitRequest
-        {
-            score = score,
-            characterIndex = characterIndex,
-            money = money,
-            timestamp = System.DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ")
-        };
-
-        string jsonData = JsonConvert.SerializeObject(requestData);
-        byte[] bodyRaw = System.Text.Encoding.UTF8.GetBytes(jsonData);
-
-        UnityWebRequest request = new UnityWebRequest(backendURL + "/api/score/submit", "POST");
+        UnityWebRequest request = new UnityWebRequest(backendURL + "/api/game/score/submit", "POST");
         request.uploadHandler = new UploadHandlerRaw(bodyRaw);
         request.downloadHandler = new DownloadHandlerBuffer();
         request.SetRequestHeader("Content-Type", "application/json");
@@ -218,7 +227,6 @@ public class APIManager : MonoBehaviour
             {
                 GameResponse response = JsonConvert.DeserializeObject<GameResponse>(request.downloadHandler.text);
 
-                // data를 ScoreData로 변환
                 ScoreData scoreData = null;
                 if (response.data != null)
                 {
@@ -237,6 +245,8 @@ public class APIManager : MonoBehaviour
         else
         {
             Debug.LogError("점수 제출 실패: " + request.error);
+            Debug.LogError("HTTP 상태 코드: " + request.responseCode);
+            Debug.LogError("응답 내용: " + request.downloadHandler.text);
             callback?.Invoke(false, null);
         }
 
@@ -244,7 +254,7 @@ public class APIManager : MonoBehaviour
     }
 
     /// <summary>
-    /// 백엔드 URL 설정 (필요시 사용)
+    /// 백엔드 URL 설정
     /// </summary>
     public void SetBackendURL(string url)
     {
@@ -252,7 +262,15 @@ public class APIManager : MonoBehaviour
     }
 
     /// <summary>
-    /// 프론트엔드 URL 설정 (필요시 사용)
+    /// WebSocket URL 설정
+    /// </summary>
+    public void SetWebSocketURL(string url)
+    {
+        websocketURL = url;
+    }
+
+    /// <summary>
+    /// 프론트엔드 URL 설정
     /// </summary>
     public void SetFrontendURL(string url)
     {
@@ -266,5 +284,15 @@ public class APIManager : MonoBehaviour
     {
         Application.OpenURL(frontendURL);
         Debug.Log("대시보드 열기: " + frontendURL);
+    }
+
+    void OnDestroy()
+    {
+        if (wsConnection != null)
+        {
+            wsConnection.OnConnected -= OnWebSocketConnected;
+            wsConnection.OnError -= OnWebSocketError;
+            wsConnection.Close();
+        }
     }
 }

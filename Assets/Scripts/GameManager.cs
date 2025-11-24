@@ -66,17 +66,17 @@ public class GameManager : MonoBehaviour
         }
 
         // 게임 시작 알림 (status = 1)
-        // apiManager.SendGameStart((success, response) =>
-        // {
-        //     if (success)
-        //     {
-        //         Debug.Log("게임 시작 API 호출 성공");
-        //     }
-        //     else
-        //     {
-        //         Debug.LogWarning("게임 시작 API 호출 실패: " + response);
-        //     }
-        // });
+        apiManager.SendGameStart((success, response) =>
+        {
+            if (success)
+            {
+                Debug.Log("게임 시작 API 호출 성공");
+            }
+            else
+            {
+                Debug.LogWarning("게임 시작 API 호출 실패: " + response);
+            }
+        });
 
         urlButton.onClick.AddListener(() =>
         {
@@ -243,31 +243,16 @@ public class GameManager : MonoBehaviour
         // 현재 점수를 저장
         dslManager.SaveMoney(player.money);
 
-        // 게임 종료 API 호출 (status = 0, stairCount = score)
-        // 게임 종료 알림 (status = 0, stairCount = score)
+        // API 호출 순서: 점수 제출 → 게임 종료
         if (apiManager != null)
         {
-            apiManager.SendGameEnd(score, (success, response) =>
-            {
-                if (success)
-                {
-                    Debug.Log("게임 종료 API 호출 성공 - 계단 수: " + score);
-                }
-                else
-                {
-                    Debug.LogWarning("게임 종료 API 호출 실패: " + response);
-                }
-            });
-
-            // 점수 제출 (게임 한 판 끝날 때마다)
-            int characterIndex = dslManager.GetSelectedCharIndex();
-            apiManager.SubmitScore(score, characterIndex, player.money, (success, scoreData) =>
+            // 1. 점수 제출 (게임이 진행 중일 때)
+            apiManager.SubmitScore(score, (success, scoreData) =>
             {
                 if (success && scoreData != null)
                 {
-                    Debug.Log($"점수 제출 성공 - 점수: {score}, 순위: {scoreData.rank}, 최고 기록: {scoreData.isNewBestScore}");
+                    Debug.Log($"점수 제출 성공 - 계단 수: {score}, 순위: {scoreData.rank}, 최고 기록: {scoreData.isNewBestScore}");
 
-                    // 백엔드에서 받은 순위나 최고 기록 정보를 UI에 표시할 수 있습니다
                     if (scoreData.isNewBestScore)
                     {
                         Debug.Log("새로운 최고 기록 달성!");
@@ -277,6 +262,19 @@ public class GameManager : MonoBehaviour
                 {
                     Debug.LogWarning("점수 제출 실패");
                 }
+
+                // 2. 점수 제출 후 게임 종료 (state = 0)
+                apiManager.SendGameEnd(score, (endSuccess, response) =>
+                {
+                    if (endSuccess)
+                    {
+                        Debug.Log("게임 종료 API 호출 성공 - 계단 수: " + score);
+                    }
+                    else
+                    {
+                        Debug.LogWarning("게임 종료 API 호출 실패: " + response);
+                    }
+                });
             });
         }
 
