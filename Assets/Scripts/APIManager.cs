@@ -247,4 +247,13 @@ public class APIManager : MonoBehaviour
     {
         baseURL = url;
     }
+
+    /// <summary>
+    /// 베이스 URL을 브라우저에서 열기
+    /// </summary>
+    public void OpenBaseURL()
+    {
+        Application.OpenURL(baseURL);
+        Debug.Log("URL 열기: " + baseURL);
+    }
 }

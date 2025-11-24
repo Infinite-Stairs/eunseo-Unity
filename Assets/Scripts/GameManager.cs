@@ -3,7 +3,8 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.SceneManagement;
-public class GameManager : MonoBehaviour {
+public class GameManager : MonoBehaviour
+{
     public Player player;
     public ObjectManager objectManager;
     public DSLManager dslManager;
@@ -17,6 +18,8 @@ public class GameManager : MonoBehaviour {
     public Text finalScoreText, bestScoreText, scoreText;
     public Image gauge;
     public Button[] settingButtons;
+
+    public Button urlButton;
 
     int score, sceneCount, selectedIndex;
     public bool gaugeStart = false, vibrationOn = true, isGamePaused = false;
@@ -34,7 +37,8 @@ public class GameManager : MonoBehaviour {
     State state = State.start;
 
 
-    void Awake() {
+    void Awake()
+    {
         players[selectedIndex].SetActive(true);
         player = players[selectedIndex].GetComponent<Player>();
 
@@ -46,31 +50,47 @@ public class GameManager : MonoBehaviour {
         UI[1].SetActive(!dslManager.IsRetry());
 
         // APIManager 찾기 (씬에 없으면 생성)
-        if (apiManager == null) {
+        if (apiManager == null)
+        {
             GameObject apiObj = GameObject.Find("APIManager");
-            if (apiObj == null) {
+            if (apiObj == null)
+            {
                 apiObj = new GameObject("APIManager");
                 apiManager = apiObj.AddComponent<APIManager>();
-            } else {
+            }
+            else
+            {
                 apiManager = apiObj.GetComponent<APIManager>();
             }
         }
 
         // 게임 시작 알림 (status = 1)
-        apiManager.SendGameStart((success, response) => {
-            if (success) {
-                Debug.Log("게임 시작 API 호출 성공");
-            } else {
-                Debug.LogWarning("게임 시작 API 호출 실패: " + response);
-            }
+        // apiManager.SendGameStart((success, response) =>
+        // {
+        //     if (success)
+        //     {
+        //         Debug.Log("게임 시작 API 호출 성공");
+        //     }
+        //     else
+        //     {
+        //         Debug.LogWarning("게임 시작 API 호출 실패: " + response);
+        //     }
+        // });
+
+        urlButton.onClick.AddListener(() =>
+        {
+            apiManager.OpenBaseURL();
         });
     }
 
 
     //Initially Spawn The Stairs
-    void StairsInit() {
-        for (int i = 0; i < 20; i++) {
-            switch (state) {
+    void StairsInit()
+    {
+        for (int i = 0; i < 20; i++)
+        {
+            switch (state)
+            {
                 case State.start:
                     stairs[i].transform.position = startPos;
                     state = State.leftDir;
@@ -84,10 +104,12 @@ public class GameManager : MonoBehaviour {
             }
             beforePos = stairs[i].transform.position;
 
-            if (i != 0) {
+            if (i != 0)
+            {
                 //Coin object activation according to random probability
                 if (Random.Range(1, 9) < 3) objectManager.MakeObj("coin", i);
-                if (Random.Range(1, 9) < 3 && i < 19) {
+                if (Random.Range(1, 9) < 3 && i < 19)
+                {
                     if (state == State.leftDir) state = State.rightDir;
                     else if (state == State.rightDir) state = State.leftDir;
                     IsChangeDir[i + 1] = true;
@@ -100,10 +122,12 @@ public class GameManager : MonoBehaviour {
 
 
     //Spawn The Stairs At The Random Location
-    void SpawnStair(int num) {
+    void SpawnStair(int num)
+    {
         IsChangeDir[num + 1 == 20 ? 0 : num + 1] = false;
         beforePos = stairs[num == 0 ? 19 : num - 1].transform.position;
-        switch (state) {
+        switch (state)
+        {
             case State.leftDir:
                 stairs[num].transform.position = beforePos + leftPos;
                 break;
@@ -114,21 +138,24 @@ public class GameManager : MonoBehaviour {
 
         //Coin object activation according to random probability
         if (Random.Range(1, 9) < 3) objectManager.MakeObj("coin", num);
-        if (Random.Range(1, 9) < 3) {
+        if (Random.Range(1, 9) < 3)
+        {
             if (state == State.leftDir) state = State.rightDir;
             else if (state == State.rightDir) state = State.leftDir;
-            IsChangeDir[num+1 == 20? 0 : num+1] = true;
+            IsChangeDir[num + 1 == 20 ? 0 : num + 1] = true;
         }
     }
 
 
 
     //Stairs Moving Along The Direction       
-    public void StairMove(int stairIndex, bool isChange, bool isleft) {
+    public void StairMove(int stairIndex, bool isChange, bool isleft)
+    {
         if (player.isDie) return;
 
         //Move stairs to the right or left
-        for (int i = 0; i < 20; i++) {
+        for (int i = 0; i < 20; i++)
+        {
             if (isleft) stairs[i].transform.position += leftDir;
             else stairs[i].transform.position += rightDir;
         }
@@ -138,22 +165,25 @@ public class GameManager : MonoBehaviour {
             if (stairs[i].transform.position.y < -5) SpawnStair(i);
 
         //Game over if climbing stairs is wrong
-        if(IsChangeDir[stairIndex] != isChange) {
+        if (IsChangeDir[stairIndex] != isChange)
+        {
             GameOver();
             return;
         }
 
         //Score Update & Gauge Increase
         scoreText.text = (++score).ToString();
-        gauge.fillAmount += 0.7f ;
+        gauge.fillAmount += 0.7f;
         backGround.transform.position += backGround.transform.position.y < -14f ?
             new Vector3(0, 4.7f, 0) : new Vector3(0, -0.05f, 0);
     }
 
 
     //#.Gauge
-    void GaugeReduce() {
-        if (gaugeStart) {
+    void GaugeReduce()
+    {
+        if (gaugeStart)
+        {
             //Gauge Reduction Rate Increases As Score Increases
             if (score > 30) gaugeRedcutionRate = 0.0033f;
             if (score > 60) gaugeRedcutionRate = 0.0037f;
@@ -167,16 +197,19 @@ public class GameManager : MonoBehaviour {
         Invoke("GaugeReduce", 0.01f);
     }
 
-    
-    IEnumerator CheckGauge() {
-        while (gauge.fillAmount != 0) {
+
+    IEnumerator CheckGauge()
+    {
+        while (gauge.fillAmount != 0)
+        {
             yield return new WaitForSeconds(0.4f);
         }
         GameOver();
     }
 
 
-    void GameOver() {
+    void GameOver()
+    {
         //Animation
         anim[0].SetBool("GameOver", true);
         player.anim.SetBool("Die", true);
@@ -191,26 +224,36 @@ public class GameManager : MonoBehaviour {
         dslManager.SaveMoney(player.money);
 
         // 게임 종료 알림 (status = 0, stairCount = score)
-        if (apiManager != null) {
-            apiManager.SendGameEnd(score, (success, response) => {
-                if (success) {
+        if (apiManager != null)
+        {
+            apiManager.SendGameEnd(score, (success, response) =>
+            {
+                if (success)
+                {
                     Debug.Log("게임 종료 API 호출 성공 - 계단 수: " + score);
-                } else {
+                }
+                else
+                {
                     Debug.LogWarning("게임 종료 API 호출 실패: " + response);
                 }
             });
 
             // 점수 제출 (게임 한 판 끝날 때마다)
             int characterIndex = dslManager.GetSelectedCharIndex();
-            apiManager.SubmitScore(score, characterIndex, player.money, (success, scoreData) => {
-                if (success && scoreData != null) {
+            apiManager.SubmitScore(score, characterIndex, player.money, (success, scoreData) =>
+            {
+                if (success && scoreData != null)
+                {
                     Debug.Log($"점수 제출 성공 - 점수: {score}, 순위: {scoreData.rank}, 최고 기록: {scoreData.isNewBestScore}");
 
                     // 백엔드에서 받은 순위나 최고 기록 정보를 UI에 표시할 수 있습니다
-                    if (scoreData.isNewBestScore) {
+                    if (scoreData.isNewBestScore)
+                    {
                         Debug.Log("새로운 최고 기록 달성!");
                     }
-                } else {
+                }
+                else
+                {
                     Debug.LogWarning("점수 제출 실패");
                 }
             });
@@ -222,7 +265,8 @@ public class GameManager : MonoBehaviour {
 
 
     //Show score after game over
-    void ShowScore() {
+    void ShowScore()
+    {
         finalScoreText.text = score.ToString();
         dslManager.SaveRankScore(score);
         bestScoreText.text = dslManager.GetBestScore().ToString();
@@ -234,20 +278,24 @@ public class GameManager : MonoBehaviour {
 
 
 
-    public void BtnDown(GameObject btn) {
+    public void BtnDown(GameObject btn)
+    {
         btn.transform.localScale = new Vector3(0.8f, 0.8f, 0.8f);
-        if (btn.name == "ClimbBtn")  player.Climb(false);
+        if (btn.name == "ClimbBtn") player.Climb(false);
         else if (btn.name == "ChangeDirBtn") player.Climb(true);
     }
 
 
-    public void BtnUp(GameObject btn) {
+    public void BtnUp(GameObject btn)
+    {
         btn.transform.localScale = new Vector3(1f, 1f, 1f);
-        if (btn.name == "PauseBtn") {
+        if (btn.name == "PauseBtn")
+        {
             CancelInvoke();  //Gauge Stopped
             isGamePaused = true;
         }
-        if (btn.name == "ResumeBtn") {
+        if (btn.name == "ResumeBtn")
+        {
             GaugeReduce();
             isGamePaused = false;
         }
@@ -256,7 +304,8 @@ public class GameManager : MonoBehaviour {
 
 
     //#.Setting
-    public void SoundInit() {
+    public void SoundInit()
+    {
         selectedIndex = dslManager.GetSelectedCharIndex();
         player = players[selectedIndex].GetComponent<Player>();
         sound[3] = player.sound[0];
@@ -265,21 +314,25 @@ public class GameManager : MonoBehaviour {
     }
 
 
-    public void SettingBtnInit() {
+    public void SettingBtnInit()
+    {
         bool on;
-        for (int i = 0; i < 2; i++) {
+        for (int i = 0; i < 2; i++)
+        {
             on = dslManager.GetSettingOn("BgmBtn");
             if (on) settingButtons[i].image.color = new Color(1, 1, 1, 1f);
             else settingButtons[i].image.color = new Color(1, 1, 1, 0.5f);
         }
 
-        for (int i = 2; i < 4; i++) {
+        for (int i = 2; i < 4; i++)
+        {
             on = dslManager.GetSettingOn("SoundBtn");
             if (on) settingButtons[i].image.color = new Color(1, 1, 1, 1f);
             else settingButtons[i].image.color = new Color(1, 1, 1, 0.5f);
         }
 
-        for (int i = 4; i < 6; i++) {
+        for (int i = 4; i < 6; i++)
+        {
             on = dslManager.GetSettingOn("VibrateBtn");
             if (on) settingButtons[i].image.color = new Color(1, 1, 1, 1f);
             else settingButtons[i].image.color = new Color(1, 1, 1, 0.5f);
@@ -287,42 +340,50 @@ public class GameManager : MonoBehaviour {
     }
 
 
-    public void SettingBtnChange(Button btn) {
+    public void SettingBtnChange(Button btn)
+    {
         bool on = dslManager.GetSettingOn(btn.name);
         if (btn.name == "BgmBtn")
-            for (int i = 0; i < 2; i++) {
+            for (int i = 0; i < 2; i++)
+            {
                 if (on) settingButtons[i].image.color = new Color(1, 1, 1, 1f);
                 else settingButtons[i].image.color = new Color(1, 1, 1, 0.5f);
             }
-        if (btn.name == "SoundBtn") {
-            for (int i = 2; i < 4; i++) {               
+        if (btn.name == "SoundBtn")
+        {
+            for (int i = 2; i < 4; i++)
+            {
                 if (on) settingButtons[i].image.color = new Color(1, 1, 1, 1f);
                 else settingButtons[i].image.color = new Color(1, 1, 1, 0.5f);
             }
         }
-        if (btn.name == "VibrateBtn") {
-            for (int i = 4; i < 6; i++) {
+        if (btn.name == "VibrateBtn")
+        {
+            for (int i = 4; i < 6; i++)
+            {
                 if (on) settingButtons[i].image.color = new Color(1, 1, 1, 1f);
                 else settingButtons[i].image.color = new Color(1, 1, 1, 0.5f);
             }
         }
     }
 
-    public void SettingOnOff(string type) {
-        switch (type) {
+    public void SettingOnOff(string type)
+    {
+        switch (type)
+        {
             case "BgmBtn":
                 if (dslManager.GetSettingOn(type)) { dontDestory.BgmPlay(); }
                 else dontDestory.BgmStop();
                 break;
             case "SoundBtn":
                 bool isOn = !dslManager.GetSettingOn(type);
-                for (int i = 0; i < sound.Length; i++) 
+                for (int i = 0; i < sound.Length; i++)
                     sound[i].mute = isOn;
                 break;
             case "VibrateBtn":
                 vibrationOn = dslManager.GetSettingOn(type);
                 break;
-        }       
+        }
     }
 
     void Vibration()
@@ -334,7 +395,8 @@ public class GameManager : MonoBehaviour {
     }
 
 
-    public void PlaySound(int index) {
+    public void PlaySound(int index)
+    {
         sound[index].Play();
     }
 
@@ -349,8 +411,9 @@ public class GameManager : MonoBehaviour {
         SceneManager.LoadScene(i);
     }
 
-    
-    private void OnApplicationQuit() {
+
+    private void OnApplicationQuit()
+    {
         dslManager.SaveMoney(player.money);
-    }   
+    }
 }
