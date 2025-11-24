@@ -22,6 +22,7 @@ public class GameManager : MonoBehaviour
     public Button urlButton;
 
     int score, sceneCount, selectedIndex;
+    [System.NonSerialized]
     public bool gaugeStart = false, vibrationOn = true, isGamePaused = false;
     float gaugeRedcutionRate = 0.0025f;
     public bool[] IsChangeDir = new bool[20];
