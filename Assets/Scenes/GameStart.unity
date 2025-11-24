@@ -10210,9 +10210,6 @@ MonoBehaviour:
   - {fileID: 1107497211}
   - {fileID: 1447004355}
   urlButton: {fileID: 1118161483}
-  gaugeStart: 1
-  vibrationOn: 1
-  isGamePaused: 0
   IsChangeDir: 0000000000000000000000000000000000000000
 --- !u!4 &1583425217
 Transform:

@@ -209,21 +209,41 @@ public class GameManager : MonoBehaviour
     }
 
 
+    /*************  ✨ Windsurf Command 🌟  *************/
+    /// <summary>
+    /// 게임이 종료된 후 호출되는 함수
+    /// </summary>
     void GameOver()
     {
+        // Animation
+        // Game over animation을 재생
         //Animation
         anim[0].SetBool("GameOver", true);
+
+        // Player die animation을 재생
         player.anim.SetBool("Die", true);
 
+        // UI
+        // 게임 종료 후 점수를 표시
         //UI
         ShowScore();
+
+        // Pause button을 숨기
         pauseBtn.SetActive(false);
 
+        // Player die flag를 true로 설정
         player.isDie = true;
+
+        // Player die animation을 재생
         player.MoveAnimation();
+
+        // Vibration을 설정할 경우에 Vibration을 호출
         if (vibrationOn) Vibration();
+
+        // 현재 점수를 저장
         dslManager.SaveMoney(player.money);
 
+        // 게임 종료 API 호출 (status = 0, stairCount = score)
         // 게임 종료 알림 (status = 0, stairCount = score)
         if (apiManager != null)
         {
@@ -260,9 +280,14 @@ public class GameManager : MonoBehaviour
             });
         }
 
+        // Invoke를 취소하여 GaugeBar animation을 중지
+        CancelInvoke();
+
+        // 1.5초 후에 모든 UI를 숨기
         CancelInvoke();  //GaugeBar Stopped
         Invoke("DisableUI", 1.5f);
     }
+    /*******  1a2ef763-87c7-4464-ad8d-353fbc44e9db  *******/
 
 
     //Show score after game over
