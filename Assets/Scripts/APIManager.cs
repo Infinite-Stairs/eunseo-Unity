@@ -184,7 +184,17 @@ public class APIManager : MonoBehaviour
     private IEnumerator SendGameEndCoroutine(int stairCount, Action<bool, string> callback)
     {
         // 1. HTTP API 호출 (백엔드 game_handler.is_playing = False 설정)
+        // stairCount를 JSON body로 전송
+        ScoreSubmitRequest requestData = new ScoreSubmitRequest
+        {
+            stairCount = stairCount
+        };
+
+        string jsonData = JsonConvert.SerializeObject(requestData);
+        byte[] bodyRaw = System.Text.Encoding.UTF8.GetBytes(jsonData);
+
         UnityWebRequest request = new UnityWebRequest(backendURL + "/api/game/end", "POST");
+        request.uploadHandler = new UploadHandlerRaw(bodyRaw);
         request.downloadHandler = new DownloadHandlerBuffer();
         request.SetRequestHeader("Content-Type", "application/json");
 
@@ -204,9 +214,9 @@ public class APIManager : MonoBehaviour
             if (wsConnection != null && wsConnection.IsConnected)
             {
                 var wsRequest = new GameStateRequest { state = 0 };
-                string jsonData = JsonConvert.SerializeObject(wsRequest);
-                wsConnection.Send(jsonData);
-                Debug.Log("게임 종료 WebSocket 전송: " + jsonData);
+                string wsJsonData = JsonConvert.SerializeObject(wsRequest);
+                wsConnection.Send(wsJsonData);
+                Debug.Log("게임 종료 WebSocket 전송: " + wsJsonData);
             }
 
             callback?.Invoke(true, "게임 종료 성공");
