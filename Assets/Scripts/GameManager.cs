@@ -80,7 +80,7 @@ public class GameManager : MonoBehaviour
 
         urlButton.onClick.AddListener(() =>
         {
-            apiManager.OpenBaseURL();
+            apiManager.OpenDashboard();
         });
     }
 

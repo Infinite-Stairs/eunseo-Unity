@@ -45,8 +45,11 @@ public class ScoreData
 
 public class APIManager : MonoBehaviour
 {
-    // TODO: 백엔드 서버 URL로 변경해주세요
-    private string baseURL = "https://dowhile001.vercel.app";
+    // API 호출용 백엔드 서버 URL
+    private string backendURL = "https://gahuifunction.onrender.com";
+
+    // 대시보드 열기용 프론트엔드 URL
+    private string frontendURL = "https://dowhile001.vercel.app";
 
     // 게임 세션 ID (백엔드에서 받아올 수도 있습니다)
     private string currentSessionId;
@@ -95,7 +98,7 @@ public class APIManager : MonoBehaviour
         string jsonData = JsonConvert.SerializeObject(requestData);
         byte[] bodyRaw = System.Text.Encoding.UTF8.GetBytes(jsonData);
 
-        UnityWebRequest request = new UnityWebRequest(baseURL + "/game/start", "POST");
+        UnityWebRequest request = new UnityWebRequest(backendURL + "/api/game/start", "POST");
         request.uploadHandler = new UploadHandlerRaw(bodyRaw);
         request.downloadHandler = new DownloadHandlerBuffer();
         request.SetRequestHeader("Content-Type", "application/json");
@@ -144,7 +147,7 @@ public class APIManager : MonoBehaviour
         string jsonData = JsonConvert.SerializeObject(requestData);
         byte[] bodyRaw = System.Text.Encoding.UTF8.GetBytes(jsonData);
 
-        UnityWebRequest request = new UnityWebRequest(baseURL + "/game/end", "POST");
+        UnityWebRequest request = new UnityWebRequest(backendURL + "/api/game/end", "POST");
         request.uploadHandler = new UploadHandlerRaw(bodyRaw);
         request.downloadHandler = new DownloadHandlerBuffer();
         request.SetRequestHeader("Content-Type", "application/json");
@@ -194,7 +197,7 @@ public class APIManager : MonoBehaviour
         string jsonData = JsonConvert.SerializeObject(requestData);
         byte[] bodyRaw = System.Text.Encoding.UTF8.GetBytes(jsonData);
 
-        UnityWebRequest request = new UnityWebRequest(baseURL + "/score/submit", "POST");
+        UnityWebRequest request = new UnityWebRequest(backendURL + "/api/score/submit", "POST");
         request.uploadHandler = new UploadHandlerRaw(bodyRaw);
         request.downloadHandler = new DownloadHandlerBuffer();
         request.SetRequestHeader("Content-Type", "application/json");
@@ -241,19 +244,27 @@ public class APIManager : MonoBehaviour
     }
 
     /// <summary>
-    /// 베이스 URL 설정 (필요시 사용)
+    /// 백엔드 URL 설정 (필요시 사용)
     /// </summary>
-    public void SetBaseURL(string url)
+    public void SetBackendURL(string url)
     {
-        baseURL = url;
+        backendURL = url;
     }
 
     /// <summary>
-    /// 베이스 URL을 브라우저에서 열기
+    /// 프론트엔드 URL 설정 (필요시 사용)
     /// </summary>
-    public void OpenBaseURL()
+    public void SetFrontendURL(string url)
     {
-        Application.OpenURL(baseURL);
-        Debug.Log("URL 열기: " + baseURL);
+        frontendURL = url;
+    }
+
+    /// <summary>
+    /// 대시보드(프론트엔드)를 브라우저에서 열기
+    /// </summary>
+    public void OpenDashboard()
+    {
+        Application.OpenURL(frontendURL);
+        Debug.Log("대시보드 열기: " + frontendURL);
     }
 }

@@ -14,11 +14,12 @@ npm install express mysql2 cors dotenv
 ## 2. 서버 기본 구조
 
 ### server.js
+
 ```javascript
-const express = require('express');
-const cors = require('cors');
-const mysql = require('mysql2/promise');
-require('dotenv').config();
+const express = require("express");
+const cors = require("cors");
+const mysql = require("mysql2/promise");
+require("dotenv").config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -29,25 +30,25 @@ app.use(express.json());
 
 // Database connection pool
 const pool = mysql.createPool({
-  host: process.env.DB_HOST || 'localhost',
-  user: process.env.DB_USER || 'root',
-  password: process.env.DB_PASSWORD || '',
-  database: process.env.DB_NAME || 'infinite_stairs',
+  host: process.env.DB_HOST || "localhost",
+  user: process.env.DB_USER || "root",
+  password: process.env.DB_PASSWORD || "",
+  database: process.env.DB_NAME || "infinite_stairs",
   waitForConnections: true,
   connectionLimit: 10,
-  queueLimit: 0
+  queueLimit: 0,
 });
 
 // Routes
-const gameRoutes = require('./routes/game');
-const scoreRoutes = require('./routes/score');
+const gameRoutes = require("./routes/game");
+const scoreRoutes = require("./routes/score");
 
-app.use('/api/game', gameRoutes);
-app.use('/api/score', scoreRoutes);
+app.use("/api/game", gameRoutes);
+app.use("/api/score", scoreRoutes);
 
 // Health check
-app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', message: 'Server is running' });
+app.get("/api/health", (req, res) => {
+  res.json({ status: "ok", message: "Server is running" });
 });
 
 app.listen(PORT, () => {
@@ -60,24 +61,25 @@ module.exports = { pool };
 ## 3. 점수 제출 API 구현
 
 ### routes/score.js
+
 ```javascript
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const { pool } = require('../server');
+const { pool } = require("../server");
 
 // 캐릭터 이름 매핑
 const CHARACTER_NAMES = {
-  0: 'BusinessMan',
-  1: 'Rapper',
-  2: 'Secretary',
-  3: 'Boxer',
-  4: 'CheerLeader',
-  5: 'Sheriff',
-  6: 'Plumber'
+  0: "BusinessMan",
+  1: "Rapper",
+  2: "Secretary",
+  3: "Boxer",
+  4: "CheerLeader",
+  5: "Sheriff",
+  6: "Plumber",
 };
 
 // ★ 점수 제출 API (가장 중요)
-router.post('/submit', async (req, res) => {
+router.post("/submit", async (req, res) => {
   try {
     const { score, characterIndex, money, timestamp } = req.body;
 
@@ -85,16 +87,16 @@ router.post('/submit', async (req, res) => {
     if (score === undefined || characterIndex === undefined) {
       return res.status(400).json({
         success: false,
-        message: '필수 필드가 누락되었습니다',
-        error: 'score와 characterIndex는 필수입니다'
+        message: "필수 필드가 누락되었습니다",
+        error: "score와 characterIndex는 필수입니다",
       });
     }
 
     if (score < 0 || characterIndex < 0 || characterIndex > 6) {
       return res.status(400).json({
         success: false,
-        message: '잘못된 데이터입니다',
-        error: 'score는 0 이상, characterIndex는 0-6 사이여야 합니다'
+        message: "잘못된 데이터입니다",
+        error: "score는 0 이상, characterIndex는 0-6 사이여야 합니다",
       });
     }
 
@@ -109,19 +111,25 @@ router.post('/submit', async (req, res) => {
       const [insertResult] = await connection.execute(
         `INSERT INTO scores (score, character_index, character_name, money, timestamp)
          VALUES (?, ?, ?, ?, ?)`,
-        [score, characterIndex, characterName, money || 0, timestamp || new Date()]
+        [
+          score,
+          characterIndex,
+          characterName,
+          money || 0,
+          timestamp || new Date(),
+        ]
       );
 
       // 현재 점수의 순위 계산
       const [rankResult] = await connection.execute(
-        'SELECT COUNT(*) + 1 as rank FROM scores WHERE score > ?',
+        "SELECT COUNT(*) + 1 as rank FROM scores WHERE score > ?",
         [score]
       );
       const rank = rankResult[0].rank;
 
       // 최고 점수 조회 (user_id가 있다면 사용자별로 조회)
       const [bestScoreResult] = await connection.execute(
-        'SELECT MAX(score) as bestScore FROM scores'
+        "SELECT MAX(score) as bestScore FROM scores"
       );
       const bestScore = bestScoreResult[0].bestScore || 0;
 
@@ -132,33 +140,31 @@ router.post('/submit', async (req, res) => {
 
       res.json({
         success: true,
-        message: '점수가 성공적으로 저장되었습니다',
+        message: "점수가 성공적으로 저장되었습니다",
         data: {
           rank: rank,
           isNewBestScore: isNewBestScore,
-          bestScore: bestScore
-        }
+          bestScore: bestScore,
+        },
       });
-
     } catch (error) {
       await connection.rollback();
       throw error;
     } finally {
       connection.release();
     }
-
   } catch (error) {
-    console.error('점수 제출 오류:', error);
+    console.error("점수 제출 오류:", error);
     res.status(500).json({
       success: false,
-      message: '서버 오류가 발생했습니다',
-      error: error.message
+      message: "서버 오류가 발생했습니다",
+      error: error.message,
     });
   }
 });
 
 // 최근 점수 기록 조회
-router.get('/recent', async (req, res) => {
+router.get("/recent", async (req, res) => {
   try {
     const limit = parseInt(req.query.limit) || 10;
 
@@ -172,21 +178,20 @@ router.get('/recent', async (req, res) => {
 
     res.json({
       success: true,
-      data: rows
+      data: rows,
     });
-
   } catch (error) {
-    console.error('최근 점수 조회 오류:', error);
+    console.error("최근 점수 조회 오류:", error);
     res.status(500).json({
       success: false,
-      message: '서버 오류가 발생했습니다',
-      error: error.message
+      message: "서버 오류가 발생했습니다",
+      error: error.message,
     });
   }
 });
 
 // 리더보드 조회
-router.get('/leaderboard', async (req, res) => {
+router.get("/leaderboard", async (req, res) => {
   try {
     const limit = parseInt(req.query.limit) || 100;
 
@@ -202,21 +207,20 @@ router.get('/leaderboard', async (req, res) => {
 
     res.json({
       success: true,
-      data: rows
+      data: rows,
     });
-
   } catch (error) {
-    console.error('리더보드 조회 오류:', error);
+    console.error("리더보드 조회 오류:", error);
     res.status(500).json({
       success: false,
-      message: '서버 오류가 발생했습니다',
-      error: error.message
+      message: "서버 오류가 발생했습니다",
+      error: error.message,
     });
   }
 });
 
 // 캐릭터별 통계
-router.get('/character-stats', async (req, res) => {
+router.get("/character-stats", async (req, res) => {
   try {
     const [rows] = await pool.execute(
       `SELECT
@@ -233,36 +237,35 @@ router.get('/character-stats', async (req, res) => {
 
     res.json({
       success: true,
-      data: rows
+      data: rows,
     });
-
   } catch (error) {
-    console.error('캐릭터 통계 조회 오류:', error);
+    console.error("캐릭터 통계 조회 오류:", error);
     res.status(500).json({
       success: false,
-      message: '서버 오류가 발생했습니다',
-      error: error.message
+      message: "서버 오류가 발생했습니다",
+      error: error.message,
     });
   }
 });
 
 // 전체 통계
-router.get('/stats', async (req, res) => {
+router.get("/stats", async (req, res) => {
   try {
     const [totalGames] = await pool.execute(
-      'SELECT COUNT(*) as count FROM scores'
+      "SELECT COUNT(*) as count FROM scores"
     );
 
     const [avgScore] = await pool.execute(
-      'SELECT AVG(score) as average FROM scores'
+      "SELECT AVG(score) as average FROM scores"
     );
 
     const [maxScore] = await pool.execute(
-      'SELECT MAX(score) as max FROM scores'
+      "SELECT MAX(score) as max FROM scores"
     );
 
     const [totalMoney] = await pool.execute(
-      'SELECT SUM(money) as total FROM scores'
+      "SELECT SUM(money) as total FROM scores"
     );
 
     res.json({
@@ -271,16 +274,15 @@ router.get('/stats', async (req, res) => {
         totalGames: totalGames[0].count,
         averageScore: Math.round(avgScore[0].average || 0),
         maxScore: maxScore[0].max || 0,
-        totalMoney: totalMoney[0].total || 0
-      }
+        totalMoney: totalMoney[0].total || 0,
+      },
     });
-
   } catch (error) {
-    console.error('전체 통계 조회 오류:', error);
+    console.error("전체 통계 조회 오류:", error);
     res.status(500).json({
       success: false,
-      message: '서버 오류가 발생했습니다',
-      error: error.message
+      message: "서버 오류가 발생했습니다",
+      error: error.message,
     });
   }
 });
@@ -289,22 +291,23 @@ module.exports = router;
 ```
 
 ### routes/game.js
+
 ```javascript
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const { pool } = require('../server');
-const { v4: uuidv4 } = require('uuid');
+const { pool } = require("../server");
+const { v4: uuidv4 } = require("uuid");
 
 // 게임 시작
-router.post('/start', async (req, res) => {
+router.post("/start", async (req, res) => {
   try {
     const { status } = req.body;
 
     if (status !== 1) {
       return res.status(400).json({
         success: false,
-        message: '잘못된 요청입니다',
-        error: 'status는 1이어야 합니다'
+        message: "잘못된 요청입니다",
+        error: "status는 1이어야 합니다",
       });
     }
 
@@ -312,65 +315,63 @@ router.post('/start', async (req, res) => {
     const startTime = new Date();
 
     const [result] = await pool.execute(
-      'INSERT INTO game_sessions (id, status, start_time) VALUES (?, ?, ?)',
+      "INSERT INTO game_sessions (id, status, start_time) VALUES (?, ?, ?)",
       [sessionId, status, startTime]
     );
 
     res.json({
       success: true,
-      message: '게임이 시작되었습니다',
+      message: "게임이 시작되었습니다",
       data: {
         sessionId: sessionId,
-        startTime: startTime.toISOString()
-      }
+        startTime: startTime.toISOString(),
+      },
     });
-
   } catch (error) {
-    console.error('게임 시작 오류:', error);
+    console.error("게임 시작 오류:", error);
     res.status(500).json({
       success: false,
-      message: '서버 오류가 발생했습니다',
-      error: error.message
+      message: "서버 오류가 발생했습니다",
+      error: error.message,
     });
   }
 });
 
 // 게임 종료
-router.post('/end', async (req, res) => {
+router.post("/end", async (req, res) => {
   try {
     const { status, stairCount } = req.body;
 
     if (status !== 0) {
       return res.status(400).json({
         success: false,
-        message: '잘못된 요청입니다',
-        error: 'status는 0이어야 합니다'
+        message: "잘못된 요청입니다",
+        error: "status는 0이어야 합니다",
       });
     }
 
     if (stairCount === undefined) {
       return res.status(400).json({
         success: false,
-        message: '잘못된 요청입니다',
-        error: 'stairCount는 필수입니다'
+        message: "잘못된 요청입니다",
+        error: "stairCount는 필수입니다",
       });
     }
 
     res.json({
       success: true,
-      message: '게임 결과가 저장되었습니다',
+      message: "게임 결과가 저장되었습니다",
       data: {
         stairCount: stairCount,
-        endTime: new Date().toISOString()
-      }
+        endTime: new Date().toISOString(),
+      },
     });
-
   } catch (error) {
-    console.error('게임 종료 오류:', error);
+    console.error("게임 종료 오류:", error);
     res.status(500).json({
       success: false,
-      message: '서버 오류가 발생했습니다',
-      error: error.message
+      message: "서버 오류가 발생했습니다",
+      error: error.message,
     });
   }
 });
@@ -381,6 +382,7 @@ module.exports = router;
 ## 4. 데이터베이스 초기화
 
 ### database/init.sql
+
 ```sql
 -- 데이터베이스 생성
 CREATE DATABASE IF NOT EXISTS infinite_stairs;
@@ -431,6 +433,7 @@ CREATE TABLE IF NOT EXISTS user_stats (
 ## 5. 환경 변수 설정
 
 ### .env
+
 ```
 PORT=3000
 DB_HOST=localhost

@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.UI;
 
 public class InputMapper : MonoBehaviour
 {
@@ -58,6 +59,29 @@ public class InputMapper : MonoBehaviour
         "Right (D-Pad 오른쪽)"
     };
 
+    [Header("UI 버튼 연결 (Inspector에서 드래그)")]
+    [Tooltip("0:L, 1:R, 2:X, 3:Y, 4:A, 5:B, 6:Select, 7:Start, 8:Up, 9:Down, 10:Left, 11:Right")]
+    public Button[] uiButtons = new Button[12];
+
+    void Start()
+    {
+        // 연결 상태 검증
+        if (debugMode)
+        {
+            for (int i = 0; i < 12; i++)
+            {
+                if (uiButtons == null || i >= uiButtons.Length || uiButtons[i] == null)
+                {
+                    Debug.LogWarning($"[InputMapper] UI 버튼 미연결: {buttonNames[i]} (인덱스 {i})");
+                }
+                else
+                {
+                    Debug.Log($"[InputMapper] UI 버튼 연결됨: {buttonNames[i]} -> {uiButtons[i].name}");
+                }
+            }
+        }
+    }
+
     void Update()
     {
         // 모든 컨트롤러 버튼 체크
@@ -66,10 +90,23 @@ public class InputMapper : MonoBehaviour
             previousButtonState[i] = currentButtonState[i];
             currentButtonState[i] = Input.GetKey(controllerButtons[i]);
 
-            // 디버그 모드일 때 버튼 눌림 출력
-            if (debugMode && currentButtonState[i] && !previousButtonState[i])
+            // 버튼 눌림 감지
+            if (currentButtonState[i] && !previousButtonState[i])
             {
-                Debug.Log($"[InputMapper] ▶ 버튼 눌림: {buttonNames[i]} | KeyCode: JoystickButton{controllerButtons[i] - KeyCode.JoystickButton0} | Time: {Time.time:F2}s");
+                if (debugMode)
+                {
+                    Debug.Log($"[InputMapper] ▶ 버튼 눌림: {buttonNames[i]} | KeyCode: JoystickButton{controllerButtons[i] - KeyCode.JoystickButton0} | Time: {Time.time:F2}s");
+                }
+
+                // UI 버튼의 onClick 이벤트 호출
+                if (uiButtons != null && i < uiButtons.Length && uiButtons[i] != null)
+                {
+                    uiButtons[i].onClick.Invoke();
+                    if (debugMode)
+                    {
+                        Debug.Log($"[InputMapper] UI 버튼 클릭 호출: {uiButtons[i].name}");
+                    }
+                }
             }
 
             // 버튼 뗌 로그
