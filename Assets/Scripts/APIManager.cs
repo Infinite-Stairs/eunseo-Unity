@@ -50,7 +50,40 @@ public class APIManager : MonoBehaviour
 
     void Awake()
     {
+        // 프론트엔드에서 유니티로 메시지를 보내려면 "ReceiverObject"라는 이름의 GameObject가 필요함
+        // JavaScript에서 SendMessage("ReceiverObject", "MethodName", "data") 형태로 호출함
+        gameObject.name = "ReceiverObject";
         DontDestroyOnLoad(gameObject);
+    }
+
+    /// <summary>
+    /// 프론트엔드(JavaScript)에서 유니티로 돌아올 때 호출되는 메서드
+    /// JavaScript에서 호출: unityInstance.SendMessage("ReceiverObject", "OnReturnFromDashboard", "data");
+    /// </summary>
+    public void OnReturnFromDashboard(string data)
+    {
+        Debug.Log("대시보드에서 돌아옴: " + data);
+        // 필요한 경우 여기서 추가 처리 (예: 게임 재시작, UI 업데이트 등)
+    }
+
+    /// <summary>
+    /// 프론트엔드에서 게임 시작을 요청할 때 호출
+    /// JavaScript에서 호출: unityInstance.SendMessage("ReceiverObject", "OnStartGameFromWeb", "");
+    /// </summary>
+    public void OnStartGameFromWeb(string data)
+    {
+        Debug.Log("웹에서 게임 시작 요청: " + data);
+        // 게임 시작 로직 호출
+        SendGameStart();
+    }
+
+    /// <summary>
+    /// 프론트엔드에서 전달하는 일반 메시지 수신
+    /// JavaScript에서 호출: unityInstance.SendMessage("ReceiverObject", "ReceiveMessage", "your message");
+    /// </summary>
+    public void ReceiveMessage(string message)
+    {
+        Debug.Log("웹에서 메시지 수신: " + message);
     }
 
     void Start()
