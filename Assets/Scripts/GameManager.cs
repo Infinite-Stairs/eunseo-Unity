@@ -304,7 +304,7 @@ public class GameManager : MonoBehaviour
 
     void Update()
     {
-        // J 키 입력 - 오르기
+        // J 키 입력 - 계단 오르기 (컨트롤러 R 버튼과 동일)
         if (Input.GetKeyDown(KeyCode.J))
         {
             if (!player.isDie && !isGamePaused)
@@ -314,13 +314,33 @@ public class GameManager : MonoBehaviour
             }
         }
 
-        // K 키 입력 - 방향 전환
+        // K 키 입력 - 방향 전환 (컨트롤러 L 버튼과 동일)
         if (Input.GetKeyDown(KeyCode.K))
         {
             if (!player.isDie && !isGamePaused)
             {
                 player.Climb(true);
                 Debug.Log("[GameManager] K 키로 방향 전환 실행");
+            }
+        }
+
+        // 컨트롤러 R 버튼 (JoystickButton5) - 계단 오르기
+        if (Input.GetKeyDown(KeyCode.JoystickButton5))
+        {
+            if (!player.isDie && !isGamePaused)
+            {
+                player.Climb(false);
+                Debug.Log("[GameManager] 컨트롤러 R 버튼으로 오르기 실행");
+            }
+        }
+
+        // 컨트롤러 L 버튼 (JoystickButton4) - 방향 전환
+        if (Input.GetKeyDown(KeyCode.JoystickButton4))
+        {
+            if (!player.isDie && !isGamePaused)
+            {
+                player.Climb(true);
+                Debug.Log("[GameManager] 컨트롤러 L 버튼으로 방향 전환 실행");
             }
         }
     }

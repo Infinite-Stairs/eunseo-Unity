@@ -84,22 +84,40 @@ public class InputMapper : MonoBehaviour
 
     void Update()
     {
-
-        // J 키 입력 체크 (오르기 버튼 - 인덱스 4는 A 버튼)
+        // J 키 입력 체크 (계단 오르기) → 컨트롤러 R 버튼으로 매핑 (인덱스 1)
         if (Input.GetKeyDown(KeyCode.J))
         {
             if (debugMode)
             {
-                Debug.Log($"[InputMapper] ▶ J 키 눌림 | Time: {Time.time:F2}s");
+                Debug.Log($"[InputMapper] ▶ J 키 눌림 (계단 오르기) | Time: {Time.time:F2}s");
             }
 
-            // UI 버튼의 onClick 이벤트 호출 (A 버튼 = 인덱스 4)
-            if (uiButtons != null && 4 < uiButtons.Length && uiButtons[4] != null)
+            // UI 버튼의 onClick 이벤트 호출 (R 버튼 = 인덱스 1)
+            if (uiButtons != null && 1 < uiButtons.Length && uiButtons[1] != null)
             {
-                uiButtons[4].onClick.Invoke();
+                uiButtons[1].onClick.Invoke();
                 if (debugMode)
                 {
-                    Debug.Log($"[InputMapper] UI 버튼 클릭 호출 (J 키): {uiButtons[4].name}");
+                    Debug.Log($"[InputMapper] UI 버튼 클릭 호출 (J 키 → R): {uiButtons[1].name}");
+                }
+            }
+        }
+
+        // K 키 입력 체크 (방향 전환) → 컨트롤러 L 버튼으로 매핑 (인덱스 0)
+        if (Input.GetKeyDown(KeyCode.K))
+        {
+            if (debugMode)
+            {
+                Debug.Log($"[InputMapper] ▶ K 키 눌림 (방향 전환) | Time: {Time.time:F2}s");
+            }
+
+            // UI 버튼의 onClick 이벤트 호출 (L 버튼 = 인덱스 0)
+            if (uiButtons != null && 0 < uiButtons.Length && uiButtons[0] != null)
+            {
+                uiButtons[0].onClick.Invoke();
+                if (debugMode)
+                {
+                    Debug.Log($"[InputMapper] UI 버튼 클릭 호출 (K 키 → L): {uiButtons[0].name}");
                 }
             }
         }
