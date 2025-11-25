@@ -334,7 +334,8 @@ public class GameManager : MonoBehaviour
             }
         }
 
-        // 컨트롤러 L 버튼 (JoystickButton4) - 방향 전환
+        // 컨트롤러 L 버튼 (JoystickButton4) - 방향 전환 (주석처리: 하드웨어 점프가 J로 인식됨)
+        /*
         if (Input.GetKeyDown(KeyCode.JoystickButton4))
         {
             if (!player.isDie && !isGamePaused)
@@ -343,6 +344,7 @@ public class GameManager : MonoBehaviour
                 Debug.Log("[GameManager] 컨트롤러 L 버튼으로 방향 전환 실행");
             }
         }
+        */
     }
 
     public void BtnDown(GameObject btn)
