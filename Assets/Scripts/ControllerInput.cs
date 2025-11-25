@@ -3,13 +3,13 @@ using UnityEngine.UI;
 
 /// <summary>
 /// MainMenu 씬에서 컨트롤러 입력을 처리하는 스크립트
-/// URLButton을 Select 버튼으로, StartBtn을 Start 버튼으로 매핑
+/// URLButton을 L 버튼으로, StartBtn을 Start 버튼으로 매핑
 /// </summary>
 /// 
 public class ControllerInput : MonoBehaviour
 {
     [Header("UI 버튼 참조")]
-    public Button urlButton;      // Select 버튼 (JoystickButton8)에 매핑
+    public Button urlButton;      // L 버튼 (JoystickButton4)에 매핑
     public Button startButton;    // Start 버튼 (JoystickButton9)에 매핑
     public Button restartButton;  // 재시작 버튼 (필요 시 사용 가능)
 
@@ -39,15 +39,15 @@ public class ControllerInput : MonoBehaviour
 
     void Update()
     {
-        // Select 버튼 (JoystickButton8) → URLButton 클릭
-        if (Input.GetKeyDown(KeyCode.JoystickButton8))
+        // L 버튼 (JoystickButton4) → URLButton 클릭
+        if (Input.GetKeyDown(KeyCode.JoystickButton4))
         {
             if (urlButton != null && urlButton.interactable)
             {
                 urlButton.onClick.Invoke();
                 if (debugMode)
                 {
-                    Debug.Log($"[ControllerInput] Select 버튼으로 URLButton 클릭 | Time: {Time.time:F2}s");
+                    Debug.Log($"[ControllerInput] L 버튼으로 URLButton 클릭 | Time: {Time.time:F2}s");
                 }
             }
         }

@@ -2063,6 +2063,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   urlButton: {fileID: 1118161483}
   startButton: {fileID: 225887566}
+  restartButton: {fileID: 913252498}
   debugMode: 1
 --- !u!1 &301623035
 GameObject:
@@ -5855,7 +5856,7 @@ GameObject:
   - component: {fileID: 913252498}
   - component: {fileID: 913252501}
   m_Layer: 5
-  m_Name: StartBtn
+  m_Name: reStartBtn
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -5920,6 +5921,17 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
+      - m_Target: {fileID: 1782092096}
+        m_MethodName: SetActive
+        m_Mode: 6
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 1
+        m_CallState: 2
       - m_Target: {fileID: 1583425216}
         m_MethodName: LoadScene
         m_Mode: 3
@@ -5929,7 +5941,7 @@ MonoBehaviour:
           m_IntArgument: 0
           m_FloatArgument: 0
           m_StringArgument: 
-          m_BoolArgument: 0
+          m_BoolArgument: 1
         m_CallState: 2
 --- !u!114 &913252499
 MonoBehaviour:
@@ -6568,6 +6580,7 @@ MonoBehaviour:
   climbButton: {fileID: 1702428056}
   changeDirButton: {fileID: 580281530}
   restartButton: {fileID: 225887566}
+  urlButton: {fileID: 0}
   climbKey: 106
   changeDirKey: 107
   debugMode: 1
@@ -10396,6 +10409,7 @@ MonoBehaviour:
   climbButton: {fileID: 0}
   changeDirButton: {fileID: 0}
   restartButton: {fileID: 0}
+  urlButton: {fileID: 0}
   climbKey: 106
   changeDirKey: 107
   debugMode: 1
