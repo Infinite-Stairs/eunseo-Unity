@@ -114,8 +114,11 @@ public class APIManager : MonoBehaviour
     private void OnWebSocketError(string error)
     {
         Debug.LogError($"WebSocket 에러: {error}");
-        // 3초 후 재연결 시도
-        StartCoroutine(ReconnectAfterDelay(3f));
+        // 3초 후 재연결 시도 (오브젝트가 활성화되어 있을 때만)
+        if (gameObject != null && gameObject.activeInHierarchy)
+        {
+            StartCoroutine(ReconnectAfterDelay(3f));
+        }
     }
 
     private IEnumerator ReconnectAfterDelay(float delay)

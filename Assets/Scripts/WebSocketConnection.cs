@@ -30,7 +30,10 @@ public class WebSocketConnection : MonoBehaviour
     public void Connect(string url)
     {
         serverUrl = url;
-        StartCoroutine(ConnectCoroutine());
+        if (gameObject != null && gameObject.activeInHierarchy)
+        {
+            StartCoroutine(ConnectCoroutine());
+        }
     }
 
     private IEnumerator ConnectCoroutine()
@@ -70,7 +73,10 @@ public class WebSocketConnection : MonoBehaviour
         OnConnected?.Invoke();
 
         // 메시지 수신 루프 시작
-        StartCoroutine(ReceiveCoroutine());
+        if (gameObject != null && gameObject.activeInHierarchy)
+        {
+            StartCoroutine(ReceiveCoroutine());
+        }
 #else
         Debug.LogWarning("WebGL에서는 JavaScript WebSocket을 사용해야 합니다.");
         yield break;
@@ -133,7 +139,10 @@ public class WebSocketConnection : MonoBehaviour
             return;
         }
 
-        StartCoroutine(SendCoroutine(message));
+        if (gameObject != null && gameObject.activeInHierarchy)
+        {
+            StartCoroutine(SendCoroutine(message));
+        }
 #endif
     }
 
@@ -171,7 +180,16 @@ public class WebSocketConnection : MonoBehaviour
         isConnected = false;
         cancellationTokenSource?.Cancel();
 
-        StartCoroutine(CloseCoroutine());
+        if (gameObject != null && gameObject.activeInHierarchy)
+        {
+            StartCoroutine(CloseCoroutine());
+        }
+        else
+        {
+            // 오브젝트가 비활성화되었다면 직접 정리
+            websocket?.Dispose();
+            websocket = null;
+        }
 #endif
     }
 
@@ -195,7 +213,10 @@ public class WebSocketConnection : MonoBehaviour
     public void Reconnect()
     {
         Close();
-        StartCoroutine(ReconnectCoroutine());
+        if (gameObject != null && gameObject.activeInHierarchy)
+        {
+            StartCoroutine(ReconnectCoroutine());
+        }
     }
 
     private IEnumerator ReconnectCoroutine()
