@@ -314,7 +314,7 @@ public class GameManager : MonoBehaviour
             }
         }
 
-        // K 키 입력 - 방향 전환 (컨트롤러 L 버튼과 동일)
+        // K 키 입력 - 방향 전환
         if (Input.GetKeyDown(KeyCode.K))
         {
             if (!player.isDie && !isGamePaused)
@@ -324,27 +324,17 @@ public class GameManager : MonoBehaviour
             }
         }
 
-        // 컨트롤러 R 버튼 (JoystickButton5) - 계단 오르기
+        // 컨트롤러 R 버튼 (JoystickButton5) - 방향 전환 (K 키와 동일)
         if (Input.GetKeyDown(KeyCode.JoystickButton5))
         {
             if (!player.isDie && !isGamePaused)
             {
-                player.Climb(false);
-                Debug.Log("[GameManager] 컨트롤러 R 버튼으로 오르기 실행");
+                player.Climb(true);
+                Debug.Log("[GameManager] 컨트롤러 R 버튼으로 방향 전환 실행");
             }
         }
 
-        // 컨트롤러 L 버튼 (JoystickButton4) - 방향 전환 (주석처리: 하드웨어 점프가 J로 인식됨)
-        /*
-        if (Input.GetKeyDown(KeyCode.JoystickButton4))
-        {
-            if (!player.isDie && !isGamePaused)
-            {
-                player.Climb(true);
-                Debug.Log("[GameManager] 컨트롤러 L 버튼으로 방향 전환 실행");
-            }
-        }
-        */
+        // 컨트롤러 L 버튼은 KeyboardInput.cs에서 URL 버튼으로 처리
     }
 
     public void BtnDown(GameObject btn)

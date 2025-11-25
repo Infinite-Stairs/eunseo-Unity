@@ -5,11 +5,13 @@ using UnityEngine.UI;
 /// MainMenu 씬에서 컨트롤러 입력을 처리하는 스크립트
 /// URLButton을 Select 버튼으로, StartBtn을 Start 버튼으로 매핑
 /// </summary>
+/// 
 public class ControllerInput : MonoBehaviour
 {
     [Header("UI 버튼 참조")]
     public Button urlButton;      // Select 버튼 (JoystickButton8)에 매핑
     public Button startButton;    // Start 버튼 (JoystickButton9)에 매핑
+    public Button restartButton;  // 재시작 버튼 (필요 시 사용 가능)
 
     [Header("디버그 설정")]
     public bool debugMode = true;
@@ -28,6 +30,10 @@ public class ControllerInput : MonoBehaviour
                 Debug.LogWarning("[ControllerInput] StartButton이 연결되지 않았습니다!");
             else
                 Debug.Log($"[ControllerInput] StartButton 연결됨: {startButton.name}");
+            if (restartButton == null)
+                Debug.LogWarning("[ControllerInput] RestartButton이 연결되지 않았습니다!");
+            else
+                Debug.Log($"[ControllerInput] RestartButton 연결됨: {restartButton.name}");
         }
     }
 
@@ -57,6 +63,14 @@ public class ControllerInput : MonoBehaviour
                     Debug.Log($"[ControllerInput] Start 버튼으로 StartButton 클릭 | Time: {Time.time:F2}s");
                 }
             }
+            // if (restartButton != null && restartButton.interactable)
+            // {
+            //     restartButton.onClick.Invoke();
+            //     if (debugMode)
+            //     {
+            //         Debug.Log($"[ControllerInput] Start 버튼으로 RestartButton 클릭 | Time: {Time.time:F2}s");
+            //     }
+            // }
         }
 
         // 디버그: 모든 조이스틱 버튼 감지
