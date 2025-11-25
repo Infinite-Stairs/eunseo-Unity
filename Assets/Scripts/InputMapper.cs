@@ -7,10 +7,10 @@ public class InputMapper : MonoBehaviour
     private KeyCode[] controllerButtons = new KeyCode[12] {
         KeyCode.JoystickButton4,  // L 버튼
         KeyCode.JoystickButton5,  // R 버튼
-        KeyCode.JoystickButton2,  // X 버튼
+        KeyCode.JoystickButton2,  // B 버튼
         KeyCode.JoystickButton3,  // Y 버튼
-        KeyCode.JoystickButton0,  // A 버튼
-        KeyCode.JoystickButton1,  // B 버튼
+        KeyCode.JoystickButton0,  // X 버튼
+        KeyCode.JoystickButton1,  // A 버튼
         KeyCode.JoystickButton8,  // Select 버튼
         KeyCode.JoystickButton9,  // Start 버튼
         KeyCode.JoystickButton11, // Up 버튼
@@ -24,10 +24,10 @@ public class InputMapper : MonoBehaviour
     {
         L = 0,
         R = 1,
-        X = 2,
+        B = 2,
         Y = 3,
-        A = 4,
-        B = 5,
+        X = 4,
+        A = 5,
         Select = 6,
         Start = 7,
         Up = 8,
@@ -47,10 +47,10 @@ public class InputMapper : MonoBehaviour
     private readonly string[] buttonNames = new string[12] {
         "L (왼쪽 상단)",
         "R (오른쪽 상단)",
-        "X (왼쪽)",
+        "B (왼쪽)",
         "Y (위쪽)",
-        "A (아래쪽)",
-        "B (오른쪽)",
+        "X (아래쪽)",
+        "A (오른쪽)",
         "Select (선택)",
         "Start (시작)",
         "Up (D-Pad 위)",
@@ -84,6 +84,7 @@ public class InputMapper : MonoBehaviour
 
     void Update()
     {
+
         // J 키 입력 체크 (오르기 버튼 - 인덱스 4는 A 버튼)
         if (Input.GetKeyDown(KeyCode.J))
         {
