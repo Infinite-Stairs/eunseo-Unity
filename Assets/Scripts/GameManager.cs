@@ -302,6 +302,29 @@ public class GameManager : MonoBehaviour
 
 
 
+    void Update()
+    {
+        // J 키 입력 - 오르기
+        if (Input.GetKeyDown(KeyCode.J))
+        {
+            if (!player.isDie && !isGamePaused)
+            {
+                player.Climb(false);
+                Debug.Log("[GameManager] J 키로 오르기 실행");
+            }
+        }
+
+        // K 키 입력 - 방향 전환
+        if (Input.GetKeyDown(KeyCode.K))
+        {
+            if (!player.isDie && !isGamePaused)
+            {
+                player.Climb(true);
+                Debug.Log("[GameManager] K 키로 방향 전환 실행");
+            }
+        }
+    }
+
     public void BtnDown(GameObject btn)
     {
         btn.transform.localScale = new Vector3(0.8f, 0.8f, 0.8f);

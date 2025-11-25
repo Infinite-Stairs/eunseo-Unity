@@ -84,6 +84,25 @@ public class InputMapper : MonoBehaviour
 
     void Update()
     {
+        // J 키 입력 체크 (오르기 버튼 - 인덱스 4는 A 버튼)
+        if (Input.GetKeyDown(KeyCode.J))
+        {
+            if (debugMode)
+            {
+                Debug.Log($"[InputMapper] ▶ J 키 눌림 | Time: {Time.time:F2}s");
+            }
+
+            // UI 버튼의 onClick 이벤트 호출 (A 버튼 = 인덱스 4)
+            if (uiButtons != null && 4 < uiButtons.Length && uiButtons[4] != null)
+            {
+                uiButtons[4].onClick.Invoke();
+                if (debugMode)
+                {
+                    Debug.Log($"[InputMapper] UI 버튼 클릭 호출 (J 키): {uiButtons[4].name}");
+                }
+            }
+        }
+
         // 모든 컨트롤러 버튼 체크
         for (int i = 0; i < 12; i++)
         {
