@@ -1,19 +1,39 @@
 fileFormatVersion: 2
 guid: a8f53103303adf64e8ee5e068de12ce2
 TextureImporter:
-  fileIDToRecycleName:
-    21300000: "\uCE90\uB9AD\uD130Die_0"
-    21300002: "\uCE90\uB9AD\uD130Die_1"
-    21300004: "\uCE90\uB9AD\uD130Die_2"
-    21300006: "\uCE90\uB9AD\uD130Die_3"
-    21300008: "\uCE90\uB9AD\uD130Die_4"
-    21300010: "\uCE90\uB9AD\uD130Die_5"
-    21300012: "\uCE90\uB9AD\uD130Die_6"
-    21300014: "\uCE90\uB9AD\uD130Die_7"
-    21300016: "\uCE90\uB9AD\uD130Die_8"
-    21300018: "\uCE90\uB9AD\uD130Die_9"
+  internalIDToNameTable:
+  - first:
+      213: 21300000
+    second: "\uCE90\uB9AD\uD130Die_0"
+  - first:
+      213: 21300002
+    second: "\uCE90\uB9AD\uD130Die_1"
+  - first:
+      213: 21300004
+    second: "\uCE90\uB9AD\uD130Die_2"
+  - first:
+      213: 21300006
+    second: "\uCE90\uB9AD\uD130Die_3"
+  - first:
+      213: 21300008
+    second: "\uCE90\uB9AD\uD130Die_4"
+  - first:
+      213: 21300010
+    second: "\uCE90\uB9AD\uD130Die_5"
+  - first:
+      213: 21300012
+    second: "\uCE90\uB9AD\uD130Die_6"
+  - first:
+      213: 21300014
+    second: "\uCE90\uB9AD\uD130Die_7"
+  - first:
+      213: 21300016
+    second: "\uCE90\uB9AD\uD130Die_8"
+  - first:
+      213: 21300018
+    second: "\uCE90\uB9AD\uD130Die_9"
   externalObjects: {}
-  serializedVersion: 9
+  serializedVersion: 12
   mipmaps:
     mipMapMode: 0
     enableMipMap: 0
@@ -33,6 +53,8 @@ TextureImporter:
   isReadable: 0
   streamingMipmaps: 0
   streamingMipmapsPriority: 0
+  vTOnly: 0
+  ignoreMasterTextureLimit: 0
   grayScaleToAlpha: 0
   generateCubemap: 6
   cubemapConvolution: 0
@@ -42,8 +64,8 @@ TextureImporter:
   textureSettings:
     serializedVersion: 2
     filterMode: 0
-    aniso: -1
-    mipBias: -100
+    aniso: 1
+    mipBias: 0
     wrapU: 1
     wrapV: 1
     wrapW: 1
@@ -64,11 +86,16 @@ TextureImporter:
   textureType: 8
   textureShape: 1
   singleChannelComponent: 0
+  flipbookRows: 1
+  flipbookColumns: 1
   maxTextureSizeSet: 0
   compressionQualitySet: 0
   textureFormatSet: 0
+  ignorePngGamma: 0
+  applyGammaDecoding: 1
+  cookieLightType: 1
   platformSettings:
-  - serializedVersion: 2
+  - serializedVersion: 3
     buildTarget: DefaultTexturePlatform
     maxTextureSize: 2048
     resizeAlgorithm: 0
@@ -79,7 +106,8 @@ TextureImporter:
     allowsAlphaSplitting: 0
     overridden: 0
     androidETC2FallbackOverride: 0
-  - serializedVersion: 2
+    forceMaximumCompressionQuality_BC6H_BC7: 1
+  - serializedVersion: 3
     buildTarget: Standalone
     maxTextureSize: 2048
     resizeAlgorithm: 0
@@ -90,7 +118,8 @@ TextureImporter:
     allowsAlphaSplitting: 0
     overridden: 0
     androidETC2FallbackOverride: 0
-  - serializedVersion: 2
+    forceMaximumCompressionQuality_BC6H_BC7: 1
+  - serializedVersion: 3
     buildTarget: Android
     maxTextureSize: 2048
     resizeAlgorithm: 0
@@ -101,6 +130,19 @@ TextureImporter:
     allowsAlphaSplitting: 0
     overridden: 0
     androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 1
+  - serializedVersion: 3
+    buildTarget: WebGL
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 0
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 1
   spriteSheet:
     serializedVersion: 2
     sprites:
@@ -120,6 +162,7 @@ TextureImporter:
       tessellationDetail: 0
       bones: []
       spriteID: cbca292d798da8e4cbbaec6c22825428
+      internalID: 21300000
       vertices: []
       indices: 
       edges: []
@@ -140,6 +183,7 @@ TextureImporter:
       tessellationDetail: 0
       bones: []
       spriteID: 5f9dcac7fdcd8bc418fd130257f0dd79
+      internalID: 21300002
       vertices: []
       indices: 
       edges: []
@@ -310,6 +354,7 @@ TextureImporter:
       tessellationDetail: 0
       bones: []
       spriteID: ea42c0846272f2340835ab545ee58815
+      internalID: 21300004
       vertices: []
       indices: 
       edges: []
@@ -537,6 +582,7 @@ TextureImporter:
       tessellationDetail: 0
       bones: []
       spriteID: e63e813e45909414899a8f49b3e26fff
+      internalID: 21300006
       vertices: []
       indices: 
       edges: []
@@ -726,6 +772,7 @@ TextureImporter:
       tessellationDetail: 0
       bones: []
       spriteID: 8e9388114806eca4f87208ebabca95be
+      internalID: 21300008
       vertices: []
       indices: 
       edges: []
@@ -875,6 +922,7 @@ TextureImporter:
       tessellationDetail: 0
       bones: []
       spriteID: 0bf6db70d2fe1e64a96942db1de7850e
+      internalID: 21300010
       vertices: []
       indices: 
       edges: []
@@ -1048,6 +1096,7 @@ TextureImporter:
       tessellationDetail: 0
       bones: []
       spriteID: 04a47ecc817e52b4a9fe0e0274c7785c
+      internalID: 21300012
       vertices: []
       indices: 
       edges: []
@@ -1068,6 +1117,7 @@ TextureImporter:
       tessellationDetail: 0
       bones: []
       spriteID: 252b7bbf1eaeba44faeda9524055bd86
+      internalID: 21300014
       vertices: []
       indices: 
       edges: []
@@ -1205,6 +1255,7 @@ TextureImporter:
       tessellationDetail: 0
       bones: []
       spriteID: 9cb94f66ec51dbb45947e3da660dc36b
+      internalID: 21300016
       vertices: []
       indices: 
       edges: []
@@ -1375,6 +1426,7 @@ TextureImporter:
       tessellationDetail: 0
       bones: []
       spriteID: cc53cd164212f1b4f90b642f34b075c3
+      internalID: 21300018
       vertices: []
       indices: 
       edges: []
@@ -1532,10 +1584,23 @@ TextureImporter:
     physicsShape: []
     bones: []
     spriteID: ed343183526d0f742892fec18ff242ae
+    internalID: 0
     vertices: []
     indices: 
     edges: []
     weights: []
+    secondaryTextures: []
+    nameFileIdTable:
+      "\uCE90\uB9AD\uD130Die_0": 21300000
+      "\uCE90\uB9AD\uD130Die_1": 21300002
+      "\uCE90\uB9AD\uD130Die_2": 21300004
+      "\uCE90\uB9AD\uD130Die_3": 21300006
+      "\uCE90\uB9AD\uD130Die_4": 21300008
+      "\uCE90\uB9AD\uD130Die_5": 21300010
+      "\uCE90\uB9AD\uD130Die_6": 21300012
+      "\uCE90\uB9AD\uD130Die_7": 21300014
+      "\uCE90\uB9AD\uD130Die_8": 21300016
+      "\uCE90\uB9AD\uD130Die_9": 21300018
   spritePackingTag: 
   pSDRemoveMatte: 0
   pSDShowRemoveMatteOption: 0

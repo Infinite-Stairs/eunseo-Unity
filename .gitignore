@@ -10,6 +10,12 @@
 /[Ll]ogs/
 /[Mm]emoryCaptures/
 
+# WebGL Build for deployment (exception to Build rule)
+!/WebGLBuild/
+
+# Claude Code files
+.claude/
+
 # Never ignore Asset meta data
 !/[Aa]ssets/**/*.meta
 
