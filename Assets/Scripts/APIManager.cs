@@ -5,11 +5,12 @@ using UnityEngine;
 using UnityEngine.Networking;
 using Newtonsoft.Json;
 
-// WebSocket용 요청 (state 필드 사용)
+// WebSocket용 요청 (state 필드 수정: int -> bool)
 [Serializable]
 public class GameStateRequest
 {
-    public int state; // 1: 게임 시작, 0: 게임 종료
+    // 서버 요구사항에 맞춰 int(0, 1)에서 bool(false, true)로 변경
+    public bool state; // true: 게임 시작, false: 게임 종료
 }
 
 [Serializable]
@@ -106,6 +107,9 @@ public class APIManager : MonoBehaviour
         wsConnection.Connect(websocketURL);
     }
 
+    /// <summary>
+    /// WebSocket 연결 성공 callback
+    /// </summary>
     private void OnWebSocketConnected()
     {
         Debug.Log("WebSocket 연결됨!");
@@ -174,10 +178,11 @@ public class APIManager : MonoBehaviour
             // 2. WebSocket으로도 전송 (라즈베리파이에 알림)
             if (wsConnection != null && wsConnection.IsConnected)
             {
-                var wsRequest = new GameStateRequest { state = 1 };
-                string jsonData = JsonConvert.SerializeObject(wsRequest);
-                wsConnection.Send(jsonData);
-                Debug.Log("게임 시작 WebSocket 전송: " + jsonData);
+                // 수정됨: state = 1 대신 state = true 전송
+                var wsRequest = new GameStateRequest { state = true };
+                string wsJsonData = JsonConvert.SerializeObject(wsRequest);
+                wsConnection.Send(wsJsonData);
+                Debug.Log("게임 시작 WebSocket 전송: " + wsJsonData);
             }
 
             callback?.Invoke(true, "게임 시작 성공");
@@ -185,10 +190,10 @@ public class APIManager : MonoBehaviour
         else
         {
             Debug.LogError($"❌ 게임 시작 API 호출 실패");
-            Debug.LogError($"   - URL: {backendURL + "/api/game/start"}");
-            Debug.LogError($"   - HTTP 상태 코드: {request.responseCode}");
-            Debug.LogError($"   - 에러 메시지: {request.error}");
-            Debug.LogError($"   - 응답 내용: {request.downloadHandler?.text}");
+            Debug.LogError($"    - URL: {backendURL + "/api/game/start"}");
+            Debug.LogError($"    - HTTP 상태 코드: {request.responseCode}");
+            Debug.LogError($"    - 에러 메시지: {request.error}");
+            Debug.LogError($"    - 응답 내용: {request.downloadHandler?.text}");
             callback?.Invoke(false, request.error);
         }
 
@@ -247,7 +252,8 @@ public class APIManager : MonoBehaviour
             // 2. WebSocket으로도 전송 (라즈베리파이에 알림)
             if (wsConnection != null && wsConnection.IsConnected)
             {
-                var wsRequest = new GameStateRequest { state = 0 };
+                // 수정됨: state = 0 대신 state = false 전송
+                var wsRequest = new GameStateRequest { state = false };
                 string wsJsonData = JsonConvert.SerializeObject(wsRequest);
                 wsConnection.Send(wsJsonData);
                 Debug.Log("게임 종료 WebSocket 전송: " + wsJsonData);
@@ -258,11 +264,11 @@ public class APIManager : MonoBehaviour
         else
         {
             Debug.LogError($"❌ 게임 종료 API 호출 실패");
-            Debug.LogError($"   - URL: {backendURL + "/api/game/end"}");
-            Debug.LogError($"   - Request Body: {jsonData}");
-            Debug.LogError($"   - HTTP 상태 코드: {request.responseCode}");
-            Debug.LogError($"   - 에러 메시지: {request.error}");
-            Debug.LogError($"   - 응답 내용: {request.downloadHandler?.text}");
+            Debug.LogError($"    - URL: {backendURL + "/api/game/end"}");
+            Debug.LogError($"    - Request Body: {jsonData}");
+            Debug.LogError($"    - HTTP 상태 코드: {request.responseCode}");
+            Debug.LogError($"    - 에러 메시지: {request.error}");
+            Debug.LogError($"    - 응답 내용: {request.downloadHandler?.text}");
             callback?.Invoke(false, request.error);
         }
 
