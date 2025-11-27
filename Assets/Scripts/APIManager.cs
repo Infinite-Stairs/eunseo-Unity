@@ -139,9 +139,15 @@ public class APIManager : MonoBehaviour
     private IEnumerator SendGameStartCoroutine(Action<bool, string> callback)
     {
         // 1. HTTP API 호출 (백엔드 game_handler.is_playing = True 설정)
-        UnityWebRequest request = new UnityWebRequest(backendURL + "/api/game/start", "POST");
+        string url = backendURL + "/api/game/start";
+        Debug.Log($"[API 호출 시작] URL: {url}");
+        Debug.Log($"[API 호출 시작] backendURL: {backendURL}");
+
+        UnityWebRequest request = new UnityWebRequest(url, "POST");
         request.downloadHandler = new DownloadHandlerBuffer();
         request.SetRequestHeader("Content-Type", "application/json");
+
+        Debug.Log($"[API 호출 전] 요청 정보 - Method: POST, Headers: Content-Type=application/json");
 
         yield return request.SendWebRequest();
 
@@ -151,9 +157,14 @@ public class APIManager : MonoBehaviour
         bool isSuccess = !request.isNetworkError && !request.isHttpError;
 #endif
 
+        Debug.Log($"[API 호출 완료] HTTP 상태 코드: {request.responseCode}");
+        Debug.Log($"[API 호출 완료] Result: {request.result}");
+        Debug.Log($"[API 호출 완료] Error: {request.error}");
+        Debug.Log($"[API 호출 완료] Response: {request.downloadHandler?.text}");
+
         if (isSuccess)
         {
-            Debug.Log("게임 시작 API 호출 성공: " + request.downloadHandler.text);
+            Debug.Log("✅ 게임 시작 API 호출 성공: " + request.downloadHandler.text);
 
             // 2. WebSocket으로도 전송 (라즈베리파이에 알림)
             if (wsConnection != null && wsConnection.IsConnected)
@@ -168,8 +179,11 @@ public class APIManager : MonoBehaviour
         }
         else
         {
-            Debug.LogError("게임 시작 API 호출 실패: " + request.error);
-            Debug.LogError("응답 내용: " + request.downloadHandler.text);
+            Debug.LogError($"❌ 게임 시작 API 호출 실패");
+            Debug.LogError($"   - URL: {backendURL + "/api/game/start"}");
+            Debug.LogError($"   - HTTP 상태 코드: {request.responseCode}");
+            Debug.LogError($"   - 에러 메시지: {request.error}");
+            Debug.LogError($"   - 응답 내용: {request.downloadHandler?.text}");
             callback?.Invoke(false, request.error);
         }
 
@@ -196,10 +210,17 @@ public class APIManager : MonoBehaviour
         string jsonData = JsonConvert.SerializeObject(requestData);
         byte[] bodyRaw = System.Text.Encoding.UTF8.GetBytes(jsonData);
 
-        UnityWebRequest request = new UnityWebRequest(backendURL + "/api/game/end", "POST");
+        string url = backendURL + "/api/game/end";
+        Debug.Log($"[API 호출 시작] URL: {url}");
+        Debug.Log($"[API 호출 시작] backendURL: {backendURL}");
+        Debug.Log($"[API 호출 시작] Request Body: {jsonData}");
+
+        UnityWebRequest request = new UnityWebRequest(url, "POST");
         request.uploadHandler = new UploadHandlerRaw(bodyRaw);
         request.downloadHandler = new DownloadHandlerBuffer();
         request.SetRequestHeader("Content-Type", "application/json");
+
+        Debug.Log($"[API 호출 전] 요청 정보 - Method: POST, Headers: Content-Type=application/json");
 
         yield return request.SendWebRequest();
 
@@ -209,9 +230,14 @@ public class APIManager : MonoBehaviour
         bool isSuccess = !request.isNetworkError && !request.isHttpError;
 #endif
 
+        Debug.Log($"[API 호출 완료] HTTP 상태 코드: {request.responseCode}");
+        Debug.Log($"[API 호출 완료] Result: {request.result}");
+        Debug.Log($"[API 호출 완료] Error: {request.error}");
+        Debug.Log($"[API 호출 완료] Response: {request.downloadHandler?.text}");
+
         if (isSuccess)
         {
-            Debug.Log("게임 종료 API 호출 성공: " + request.downloadHandler.text);
+            Debug.Log("✅ 게임 종료 API 호출 성공: " + request.downloadHandler.text);
 
             // 2. WebSocket으로도 전송 (라즈베리파이에 알림)
             if (wsConnection != null && wsConnection.IsConnected)
@@ -226,8 +252,12 @@ public class APIManager : MonoBehaviour
         }
         else
         {
-            Debug.LogError("게임 종료 API 호출 실패: " + request.error);
-            Debug.LogError("응답 내용: " + request.downloadHandler.text);
+            Debug.LogError($"❌ 게임 종료 API 호출 실패");
+            Debug.LogError($"   - URL: {backendURL + "/api/game/end"}");
+            Debug.LogError($"   - Request Body: {jsonData}");
+            Debug.LogError($"   - HTTP 상태 코드: {request.responseCode}");
+            Debug.LogError($"   - 에러 메시지: {request.error}");
+            Debug.LogError($"   - 응답 내용: {request.downloadHandler?.text}");
             callback?.Invoke(false, request.error);
         }
 
