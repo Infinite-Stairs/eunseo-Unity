@@ -37,10 +37,10 @@ public class ScoreData
 public class APIManager : MonoBehaviour
 {
     // API 호출용 백엔드 서버 URL
-    private string backendURL = "https://gahuifunction.onrender.com";
+    private string backendURL = "http://192.168.147.60:8000";
 
-    // WebSocket URL (wss로 변환)
-    private string websocketURL = "wss://gahuifunction.onrender.com/ws/unity";
+    // WebSocket URL (ws로 변환)
+    private string websocketURL = "ws://192.168.147.60:8000/ws/unity";
 
     // 대시보드 열기용 프론트엔드 URL
     private string frontendURL = "https://dowhile001.vercel.app";
