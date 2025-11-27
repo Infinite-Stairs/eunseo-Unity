@@ -1,478 +1,390 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.UI;
-using UnityEngine.SceneManagement;
-public class GameManager : MonoBehaviour
+using UnityEngine.Networking;
+using Newtonsoft.Json;
+
+// WebSocket용 요청 (state 필드: bool)
+[Serializable]
+public class GameStateRequest
 {
-    public Player player;
-    public ObjectManager objectManager;
-    public DSLManager dslManager;
-    public DontDestory dontDestory;
-    public APIManager apiManager;
-    public GameObject[] players, stairs, UI;
-    public GameObject pauseBtn, backGround;
+    public bool state; // true: 게임 시작, false: 게임 종료
+}
 
-    public AudioSource[] sound;
-    public Animator[] anim;
-    public Text finalScoreText, bestScoreText, scoreText;
-    public Image gauge;
-    public Button[] settingButtons;
+[Serializable]
+public class ScoreSubmitRequest
+{
+    public int stairCount;  // 계단 수
+}
 
-    public Button urlButton;
+[Serializable]
+public class GameResponse
+{
+    public bool success;
+    public string message;
+    public object data;
+}
 
-    int score, sceneCount, selectedIndex;
-    [System.NonSerialized]
-    public bool gaugeStart = false, vibrationOn = true, isGamePaused = false;
-    float gaugeRedcutionRate = 0.0025f;
-    public bool[] IsChangeDir = new bool[20];
+[Serializable]
+public class ScoreData
+{
+    public int rank;
+    public bool isNewBestScore;
+    public int bestScore;
+}
 
-    Vector3 beforePos,
-    startPos = new Vector3(-0.8f, -1.5f, 0),
-    leftPos = new Vector3(-0.8f, 0.4f, 0),
-    rightPos = new Vector3(0.8f, 0.4f, 0),
-    leftDir = new Vector3(0.8f, -0.4f, 0),
-    rightDir = new Vector3(-0.8f, -0.4f, 0);
+public class APIManager : MonoBehaviour
+{
+    // API 호출용 백엔드 서버 URL
+    private string backendURL = "http://192.168.147.60:8000";
 
-    enum State { start, leftDir, rightDir }
-    State state = State.start;
+    // WebSocket URL (ws로 변환)
+    private string websocketURL = "ws://192.168.147.60:8000/ws/unity";
 
+    // 대시보드 열기용 프론트엔드 URL
+    private string frontendURL = "https://dowhile001.vercel.app";
+
+    // WebSocket 연결
+    private WebSocketConnection wsConnection;
 
     void Awake()
     {
-        players[selectedIndex].SetActive(true);
-        player = players[selectedIndex].GetComponent<Player>();
-
-        StairsInit();
-        GaugeReduce();
-        StartCoroutine("CheckGauge");
-
-        UI[0].SetActive(dslManager.IsRetry());
-        UI[1].SetActive(!dslManager.IsRetry());
-
-        // APIManager 찾기 (씬에 없으면 생성)
-        if (apiManager == null)
-        {
-            GameObject apiObj = GameObject.Find("APIManager");
-            if (apiObj == null)
-            {
-                apiObj = new GameObject("APIManager");
-                apiManager = apiObj.AddComponent<APIManager>();
-            }
-            else
-            {
-                apiManager = apiObj.GetComponent<APIManager>();
-            }
-        }
-
-        // 게임 시작 알림 (status = 1)
-        apiManager.SendGameStart((success, response) =>
-        {
-            if (success)
-            {
-                Debug.Log("게임 시작 API 호출 성공");
-            }
-            else
-            {
-                Debug.LogWarning("게임 시작 API 호출 실패: " + response);
-            }
-        });
-
-        urlButton.onClick.AddListener(() =>
-        {
-            apiManager.OpenDashboard();
-        });
+        gameObject.name = "ReceiverObject";
+        DontDestroyOnLoad(gameObject);
     }
 
-
-    //Initially Spawn The Stairs
-    void StairsInit()
+    public void OnReturnFromDashboard(string data)
     {
-        for (int i = 0; i < 20; i++)
-        {
-            switch (state)
-            {
-                case State.start:
-                    stairs[i].transform.position = startPos;
-                    state = State.leftDir;
-                    break;
-                case State.leftDir:
-                    stairs[i].transform.position = beforePos + leftPos;
-                    break;
-                case State.rightDir:
-                    stairs[i].transform.position = beforePos + rightPos;
-                    break;
-            }
-            beforePos = stairs[i].transform.position;
-
-            if (i != 0)
-            {
-                //Coin object activation according to random probability
-                if (Random.Range(1, 9) < 3) objectManager.MakeObj("coin", i);
-                if (Random.Range(1, 9) < 3 && i < 19)
-                {
-                    if (state == State.leftDir) state = State.rightDir;
-                    else if (state == State.rightDir) state = State.leftDir;
-                    IsChangeDir[i + 1] = true;
-                }
-            }
-        }
+        Debug.Log("대시보드에서 돌아옴: " + data);
     }
 
-
-
-
-    //Spawn The Stairs At The Random Location
-    void SpawnStair(int num)
+    public void OnStartGameFromWeb(string data)
     {
-        IsChangeDir[num + 1 == 20 ? 0 : num + 1] = false;
-        beforePos = stairs[num == 0 ? 19 : num - 1].transform.position;
-        switch (state)
-        {
-            case State.leftDir:
-                stairs[num].transform.position = beforePos + leftPos;
-                break;
-            case State.rightDir:
-                stairs[num].transform.position = beforePos + rightPos;
-                break;
-        }
-
-        //Coin object activation according to random probability
-        if (Random.Range(1, 9) < 3) objectManager.MakeObj("coin", num);
-        if (Random.Range(1, 9) < 3)
-        {
-            if (state == State.leftDir) state = State.rightDir;
-            else if (state == State.rightDir) state = State.leftDir;
-            IsChangeDir[num + 1 == 20 ? 0 : num + 1] = true;
-        }
+        Debug.Log("웹에서 게임 시작 요청: " + data);
+        SendGameStart();
     }
 
-
-
-    //Stairs Moving Along The Direction       
-    public void StairMove(int stairIndex, bool isChange, bool isleft)
+    public void ReceiveMessage(string message)
     {
-        if (player.isDie) return;
-
-        //Move stairs to the right or left
-        for (int i = 0; i < 20; i++)
-        {
-            if (isleft) stairs[i].transform.position += leftDir;
-            else stairs[i].transform.position += rightDir;
-        }
-
-        //Move the stairs below a certain height
-        for (int i = 0; i < 20; i++)
-            if (stairs[i].transform.position.y < -5) SpawnStair(i);
-
-        //Game over if climbing stairs is wrong
-        if (IsChangeDir[stairIndex] != isChange)
-        {
-            GameOver();
-            return;
-        }
-
-        //Score Update & Gauge Increase
-        scoreText.text = (++score).ToString();
-        gauge.fillAmount += 0.7f;
-        backGround.transform.position += backGround.transform.position.y < -14f ?
-            new Vector3(0, 4.7f, 0) : new Vector3(0, -0.05f, 0);
+        Debug.Log("웹에서 메시지 수신: " + message);
     }
 
-
-    //#.Gauge
-    void GaugeReduce()
+    void Start()
     {
-        if (gaugeStart)
-        {
-            //Gauge Reduction Rate Increases As Score Increases
-            if (score > 30) gaugeRedcutionRate = 0.0033f;
-            if (score > 60) gaugeRedcutionRate = 0.0037f;
-            if (score > 100) gaugeRedcutionRate = 0.0043f;
-            if (score > 150) gaugeRedcutionRate = 0.005f;
-            if (score > 200) gaugeRedcutionRate = 0.005f;
-            if (score > 300) gaugeRedcutionRate = 0.0065f;
-            if (score > 400) gaugeRedcutionRate = 0.0075f;
-            gauge.fillAmount -= gaugeRedcutionRate;
-        }
-        Invoke("GaugeReduce", 0.01f);
+        ConnectWebSocket();
     }
 
-
-    IEnumerator CheckGauge()
-    {
-        while (gauge.fillAmount != 0)
-        {
-            yield return new WaitForSeconds(0.4f);
-        }
-        GameOver();
-    }
-
-
-    /*************  ✨ Windsurf Command 🌟  *************/
     /// <summary>
-    /// 게임이 종료된 후 호출되는 함수
+    /// WebSocket 연결
     /// </summary>
-    void GameOver()
+    public void ConnectWebSocket()
     {
-        // Animation
-        // Game over animation을 재생
-        //Animation
-        anim[0].SetBool("GameOver", true);
-
-        // Player die animation을 재생
-        player.anim.SetBool("Die", true);
-
-        // UI
-        // 게임 종료 후 점수를 표시
-        //UI
-        ShowScore();
-
-        // Pause button을 숨기
-        pauseBtn.SetActive(false);
-
-        // Player die flag를 true로 설정
-        player.isDie = true;
-
-        // Player die animation을 재생
-        player.MoveAnimation();
-
-        // Vibration을 설정할 경우에 Vibration을 호출
-        if (vibrationOn) Vibration();
-
-        // 현재 점수를 저장
-        dslManager.SaveMoney(player.money);
-
-        // API 호출 순서: 점수 제출 → 게임 종료
-        if (apiManager != null)
+        if (wsConnection == null)
         {
-            // 1. 점수 제출 (게임이 진행 중일 때)
-            apiManager.SubmitScore(score, (success, scoreData) =>
-            {
-                if (success && scoreData != null)
-                {
-                    Debug.Log($"점수 제출 성공 - 계단 수: {score}, 순위: {scoreData.rank}, 최고 기록: {scoreData.isNewBestScore}");
-
-                    if (scoreData.isNewBestScore)
-                    {
-                        Debug.Log("새로운 최고 기록 달성!");
-                    }
-                }
-                else
-                {
-                    Debug.LogWarning("점수 제출 실패");
-                }
-
-                // 2. 점수 제출 후 게임 종료 (state = 0)
-                apiManager.SendGameEnd(score, (endSuccess, response) =>
-                {
-                    if (endSuccess)
-                    {
-                        Debug.Log("게임 종료 API 호출 성공 - 계단 수: " + score);
-                    }
-                    else
-                    {
-                        Debug.LogWarning("게임 종료 API 호출 실패: " + response);
-                    }
-                });
-            });
+            wsConnection = gameObject.AddComponent<WebSocketConnection>();
+            wsConnection.OnConnected += OnWebSocketConnected;
+            wsConnection.OnError += OnWebSocketError;
         }
-
-        // Invoke를 취소하여 GaugeBar animation을 중지
-        CancelInvoke();
-
-        // 1.5초 후에 모든 UI를 숨기
-        CancelInvoke();  //GaugeBar Stopped
-        Invoke("DisableUI", 1.5f);
-    }
-    /*******  1a2ef763-87c7-4464-ad8d-353fbc44e9db  *******/
-
-
-    //Show score after game over
-    void ShowScore()
-    {
-        finalScoreText.text = score.ToString();
-        dslManager.SaveRankScore(score);
-        bestScoreText.text = dslManager.GetBestScore().ToString();
-
-        //When the highest score is recorded
-        if (score == dslManager.GetBestScore() && score != 0)
-            UI[2].SetActive(true);
+        wsConnection.Connect(websocketURL);
     }
 
-
-
-    void Update()
+    private void OnWebSocketConnected()
     {
-        // J 키 입력 - 계단 오르기 (컨트롤러 R 버튼과 동일)
-        if (Input.GetKeyDown(KeyCode.J))
+        Debug.Log("✅ WebSocket 연결 성공!");
+    }
+
+    private void OnWebSocketError(string error)
+    {
+        Debug.LogError($"❌ WebSocket 에러: {error}");
+        if (gameObject != null && gameObject.activeInHierarchy)
         {
-            if (!player.isDie && !isGamePaused)
+            StartCoroutine(ReconnectAfterDelay(3f));
+        }
+    }
+
+    private IEnumerator ReconnectAfterDelay(float delay)
+    {
+        yield return new WaitForSeconds(delay);
+        Debug.Log("🔄 WebSocket 재연결 시도...");
+        ConnectWebSocket();
+    }
+
+    /// <summary>
+    /// 게임 시작 - WebSocket 우선, HTTP API 백업
+    /// </summary>
+    public void SendGameStart(Action<bool, string> callback = null)
+    {
+        StartCoroutine(SendGameStartCoroutine(callback));
+    }
+
+    private IEnumerator SendGameStartCoroutine(Action<bool, string> callback)
+    {
+        Debug.Log("========================================");
+        Debug.Log("🎮 게임 시작 신호 전송 시작");
+        Debug.Log("========================================");
+
+        bool wsSuccess = false;
+
+        // 1. WebSocket으로 전송 시도 (우선)
+        if (wsConnection != null && wsConnection.IsConnected)
+        {
+            try
             {
-                player.Climb(false);
-                Debug.Log("[GameManager] J 키로 오르기 실행");
+                var wsRequest = new GameStateRequest { state = true };
+                string wsJsonData = JsonConvert.SerializeObject(wsRequest);
+                wsConnection.Send(wsJsonData);
+                Debug.Log("✅ [WebSocket] 게임 시작 전송 성공");
+                Debug.Log($"   전송 데이터: {wsJsonData}");
+                wsSuccess = true;
+            }
+            catch (Exception e)
+            {
+                Debug.LogError($"❌ [WebSocket] 전송 실패: {e.Message}");
             }
         }
-
-        // K 키 입력 - 방향 전환
-        if (Input.GetKeyDown(KeyCode.K))
+        else
         {
-            if (!player.isDie && !isGamePaused)
-            {
-                player.Climb(true);
-                Debug.Log("[GameManager] K 키로 방향 전환 실행");
-            }
+            Debug.LogWarning("⚠️ [WebSocket] 연결되지 않음, HTTP API로 전환");
         }
 
-        // 컨트롤러 R 버튼 (JoystickButton5) - 방향 전환 (K 키와 동일)
-        if (Input.GetKeyDown(KeyCode.JoystickButton5))
-        {
-            if (!player.isDie && !isGamePaused)
-            {
-                player.Climb(true);
-                Debug.Log("[GameManager] 컨트롤러 R 버튼으로 방향 전환 실행");
-            }
-        }
+        // 2. HTTP API로 전송 (백업 또는 추가)
+        string url = backendURL + "/api/game/start";
+        Debug.Log($"📡 [HTTP API] 요청 URL: {url}");
 
-        // 컨트롤러 L 버튼은 KeyboardInput.cs에서 URL 버튼으로 처리
-    }
+        var httpRequest = new GameStateRequest { state = true };
+        string jsonData = JsonConvert.SerializeObject(httpRequest);
+        byte[] bodyRaw = System.Text.Encoding.UTF8.GetBytes(jsonData);
 
-    public void BtnDown(GameObject btn)
-    {
-        btn.transform.localScale = new Vector3(0.8f, 0.8f, 0.8f);
-        if (btn.name == "ClimbBtn") player.Climb(false);
-        else if (btn.name == "ChangeDirBtn") player.Climb(true);
-    }
+        UnityWebRequest request = new UnityWebRequest(url, "POST");
+        request.uploadHandler = new UploadHandlerRaw(bodyRaw);
+        request.downloadHandler = new DownloadHandlerBuffer();
+        request.SetRequestHeader("Content-Type", "application/json");
 
+        Debug.Log($"   요청 Body: {jsonData}");
 
-    public void BtnUp(GameObject btn)
-    {
-        btn.transform.localScale = new Vector3(1f, 1f, 1f);
-        if (btn.name == "PauseBtn")
-        {
-            CancelInvoke();  //Gauge Stopped
-            isGamePaused = true;
-        }
-        if (btn.name == "ResumeBtn")
-        {
-            GaugeReduce();
-            isGamePaused = false;
-        }
-    }
+        yield return request.SendWebRequest();
 
-
-
-    //#.Setting
-    public void SoundInit()
-    {
-        selectedIndex = dslManager.GetSelectedCharIndex();
-        player = players[selectedIndex].GetComponent<Player>();
-        sound[3] = player.sound[0];
-        sound[4] = player.sound[1];
-        sound[5] = player.sound[2];
-    }
-
-
-    public void SettingBtnInit()
-    {
-        bool on;
-        for (int i = 0; i < 2; i++)
-        {
-            on = dslManager.GetSettingOn("BgmBtn");
-            if (on) settingButtons[i].image.color = new Color(1, 1, 1, 1f);
-            else settingButtons[i].image.color = new Color(1, 1, 1, 0.5f);
-        }
-
-        for (int i = 2; i < 4; i++)
-        {
-            on = dslManager.GetSettingOn("SoundBtn");
-            if (on) settingButtons[i].image.color = new Color(1, 1, 1, 1f);
-            else settingButtons[i].image.color = new Color(1, 1, 1, 0.5f);
-        }
-
-        for (int i = 4; i < 6; i++)
-        {
-            on = dslManager.GetSettingOn("VibrateBtn");
-            if (on) settingButtons[i].image.color = new Color(1, 1, 1, 1f);
-            else settingButtons[i].image.color = new Color(1, 1, 1, 0.5f);
-        }
-    }
-
-
-    public void SettingBtnChange(Button btn)
-    {
-        bool on = dslManager.GetSettingOn(btn.name);
-        if (btn.name == "BgmBtn")
-            for (int i = 0; i < 2; i++)
-            {
-                if (on) settingButtons[i].image.color = new Color(1, 1, 1, 1f);
-                else settingButtons[i].image.color = new Color(1, 1, 1, 0.5f);
-            }
-        if (btn.name == "SoundBtn")
-        {
-            for (int i = 2; i < 4; i++)
-            {
-                if (on) settingButtons[i].image.color = new Color(1, 1, 1, 1f);
-                else settingButtons[i].image.color = new Color(1, 1, 1, 0.5f);
-            }
-        }
-        if (btn.name == "VibrateBtn")
-        {
-            for (int i = 4; i < 6; i++)
-            {
-                if (on) settingButtons[i].image.color = new Color(1, 1, 1, 1f);
-                else settingButtons[i].image.color = new Color(1, 1, 1, 0.5f);
-            }
-        }
-    }
-
-    public void SettingOnOff(string type)
-    {
-        switch (type)
-        {
-            case "BgmBtn":
-                if (dslManager.GetSettingOn(type)) { dontDestory.BgmPlay(); }
-                else dontDestory.BgmStop();
-                break;
-            case "SoundBtn":
-                bool isOn = !dslManager.GetSettingOn(type);
-                for (int i = 0; i < sound.Length; i++)
-                    sound[i].mute = isOn;
-                break;
-            case "VibrateBtn":
-                vibrationOn = dslManager.GetSettingOn(type);
-                break;
-        }
-    }
-
-    void Vibration()
-    {
-#if UNITY_ANDROID || UNITY_IOS
-        Handheld.Vibrate();
+#if UNITY_2020_1_OR_NEWER
+        bool isSuccess = request.result == UnityWebRequest.Result.Success;
+#else
+        bool isSuccess = !request.isNetworkError && !request.isHttpError;
 #endif
-        sound[0].playOnAwake = false;
+
+        Debug.Log($"📊 [HTTP API] 응답 코드: {request.responseCode}");
+        Debug.Log($"   응답 내용: {request.downloadHandler?.text}");
+
+        if (isSuccess)
+        {
+            Debug.Log("✅ [HTTP API] 게임 시작 전송 성공");
+            callback?.Invoke(true, "게임 시작 성공");
+        }
+        else
+        {
+            Debug.LogError($"❌ [HTTP API] 게임 시작 전송 실패");
+            Debug.LogError($"   에러: {request.error}");
+
+            // WebSocket이 성공했다면 전체적으로는 성공으로 간주
+            if (wsSuccess)
+            {
+                callback?.Invoke(true, "게임 시작 성공 (WebSocket)");
+            }
+            else
+            {
+                callback?.Invoke(false, request.error);
+            }
+        }
+
+        Debug.Log("========================================\n");
+        request.Dispose();
     }
 
-
-    public void PlaySound(int index)
+    /// <summary>
+    /// 게임 종료 - WebSocket 우선, HTTP API 백업
+    /// </summary>
+    public void SendGameEnd(int stairCount, Action<bool, string> callback = null)
     {
-        sound[index].Play();
+        StartCoroutine(SendGameEndCoroutine(stairCount, callback));
     }
 
-    void DisableUI()
+    private IEnumerator SendGameEndCoroutine(int stairCount, Action<bool, string> callback)
     {
-        UI[0].SetActive(false);
+        Debug.Log("========================================");
+        Debug.Log("🛑 게임 종료 신호 전송 시작");
+        Debug.Log($"   최종 점수: {stairCount}");
+        Debug.Log("========================================");
+
+        bool wsSuccess = false;
+
+        // 1. WebSocket으로 전송 시도 (우선)
+        if (wsConnection != null && wsConnection.IsConnected)
+        {
+            try
+            {
+                var wsRequest = new GameStateRequest { state = false };
+                string wsJsonData = JsonConvert.SerializeObject(wsRequest);
+                wsConnection.Send(wsJsonData);
+                Debug.Log("✅ [WebSocket] 게임 종료 전송 성공");
+                Debug.Log($"   전송 데이터: {wsJsonData}");
+                wsSuccess = true;
+            }
+            catch (Exception e)
+            {
+                Debug.LogError($"❌ [WebSocket] 전송 실패: {e.Message}");
+            }
+        }
+        else
+        {
+            Debug.LogWarning("⚠️ [WebSocket] 연결되지 않음, HTTP API로 전환");
+        }
+
+        // 2. HTTP API로 전송 (백업 또는 추가)
+        ScoreSubmitRequest requestData = new ScoreSubmitRequest
+        {
+            stairCount = stairCount
+        };
+
+        string jsonData = JsonConvert.SerializeObject(requestData);
+        byte[] bodyRaw = System.Text.Encoding.UTF8.GetBytes(jsonData);
+
+        string url = backendURL + "/api/game/end";
+        Debug.Log($"📡 [HTTP API] 요청 URL: {url}");
+        Debug.Log($"   요청 Body: {jsonData}");
+
+        UnityWebRequest request = new UnityWebRequest(url, "POST");
+        request.uploadHandler = new UploadHandlerRaw(bodyRaw);
+        request.downloadHandler = new DownloadHandlerBuffer();
+        request.SetRequestHeader("Content-Type", "application/json");
+
+        yield return request.SendWebRequest();
+
+#if UNITY_2020_1_OR_NEWER
+        bool isSuccess = request.result == UnityWebRequest.Result.Success;
+#else
+        bool isSuccess = !request.isNetworkError && !request.isHttpError;
+#endif
+
+        Debug.Log($"📊 [HTTP API] 응답 코드: {request.responseCode}");
+        Debug.Log($"   응답 내용: {request.downloadHandler?.text}");
+
+        if (isSuccess)
+        {
+            Debug.Log("✅ [HTTP API] 게임 종료 전송 성공");
+            callback?.Invoke(true, "게임 종료 성공");
+        }
+        else
+        {
+            Debug.LogError($"❌ [HTTP API] 게임 종료 전송 실패");
+            Debug.LogError($"   에러: {request.error}");
+
+            // WebSocket이 성공했다면 전체적으로는 성공으로 간주
+            if (wsSuccess)
+            {
+                callback?.Invoke(true, "게임 종료 성공 (WebSocket)");
+            }
+            else
+            {
+                callback?.Invoke(false, request.error);
+            }
+        }
+
+        Debug.Log("========================================\n");
+        request.Dispose();
     }
 
-
-    public void LoadScene(int i)
+    /// <summary>
+    /// 게임 점수 제출 - HTTP POST
+    /// </summary>
+    public void SubmitScore(int stairCount, Action<bool, ScoreData> callback = null)
     {
-        SceneManager.LoadScene(i);
+        StartCoroutine(PostScore(stairCount, callback));
     }
 
-
-    private void OnApplicationQuit()
+    private IEnumerator PostScore(int stairCount, Action<bool, ScoreData> callback)
     {
-        dslManager.SaveMoney(player.money);
+        ScoreSubmitRequest requestData = new ScoreSubmitRequest
+        {
+            stairCount = stairCount
+        };
+
+        string jsonData = JsonConvert.SerializeObject(requestData);
+        byte[] bodyRaw = System.Text.Encoding.UTF8.GetBytes(jsonData);
+
+        UnityWebRequest request = new UnityWebRequest(backendURL + "/api/game/score/submit", "POST");
+        request.uploadHandler = new UploadHandlerRaw(bodyRaw);
+        request.downloadHandler = new DownloadHandlerBuffer();
+        request.SetRequestHeader("Content-Type", "application/json");
+
+        yield return request.SendWebRequest();
+
+#if UNITY_2020_1_OR_NEWER
+        bool isSuccess = request.result == UnityWebRequest.Result.Success;
+#else
+        bool isSuccess = !request.isNetworkError && !request.isHttpError;
+#endif
+
+        if (isSuccess)
+        {
+            Debug.Log("✅ 점수 제출 성공: " + request.downloadHandler.text);
+
+            try
+            {
+                GameResponse response = JsonConvert.DeserializeObject<GameResponse>(request.downloadHandler.text);
+
+                ScoreData scoreData = null;
+                if (response.data != null)
+                {
+                    string dataJson = JsonConvert.SerializeObject(response.data);
+                    scoreData = JsonConvert.DeserializeObject<ScoreData>(dataJson);
+                }
+
+                callback?.Invoke(true, scoreData);
+            }
+            catch (Exception e)
+            {
+                Debug.LogError("❌ 응답 파싱 에러: " + e.Message);
+                callback?.Invoke(false, null);
+            }
+        }
+        else
+        {
+            Debug.LogError("❌ 점수 제출 실패: " + request.error);
+            Debug.LogError($"   HTTP 상태 코드: {request.responseCode}");
+            Debug.LogError($"   응답 내용: {request.downloadHandler.text}");
+            callback?.Invoke(false, null);
+        }
+
+        request.Dispose();
+    }
+
+    public void SetBackendURL(string url)
+    {
+        backendURL = url;
+    }
+
+    public void SetWebSocketURL(string url)
+    {
+        websocketURL = url;
+    }
+
+    public void SetFrontendURL(string url)
+    {
+        frontendURL = url;
+    }
+
+    public void OpenDashboard()
+    {
+        Application.OpenURL(frontendURL);
+        Debug.Log("🌐 대시보드 열기: " + frontendURL);
+    }
+
+    void OnDestroy()
+    {
+        if (wsConnection != null)
+        {
+            wsConnection.OnConnected -= OnWebSocketConnected;
+            wsConnection.OnError -= OnWebSocketError;
+            wsConnection.Close();
+        }
     }
 }
