@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.SceneManagement;
-
 public class GameManager : MonoBehaviour
 {
     public Player player;
@@ -23,11 +22,6 @@ public class GameManager : MonoBehaviour
     public Button urlButton;
 
     int score, sceneCount, selectedIndex;
-
-    // 게임 시작/정지 상태를 관리하는 변수
-    // true: 게임 진행 중 (입력 가능), false: 대기 상태 (입력 불가)
-    public bool gameStart = false;
-
     [System.NonSerialized]
     public bool gaugeStart = false, vibrationOn = true, isGamePaused = false;
     float gaugeRedcutionRate = 0.0025f;
@@ -71,14 +65,18 @@ public class GameManager : MonoBehaviour
             }
         }
 
-        /* * [수정됨] 기존에는 앱이 켜지자마자 게임 시작 신호를 보냈으나,
-         * 이제는 Start 버튼을 눌러야 시작되도록 이 부분은 주석 처리합니다.
-         * 필요시 주석을 해제하면 자동 시작됩니다.
-         */
-        // apiManager.SendGameStart((success, response) =>
-        // {
-        //     if (success) Debug.Log("자동 게임 시작 API 호출 성공");
-        // });
+        // 게임 시작 알림 (status = 1)
+        apiManager.SendGameStart((success, response) =>
+        {
+            if (success)
+            {
+                Debug.Log("게임 시작 API 호출 성공");
+            }
+            else
+            {
+                Debug.LogWarning("게임 시작 API 호출 실패: " + response);
+            }
+        });
 
         urlButton.onClick.AddListener(() =>
         {
@@ -122,6 +120,8 @@ public class GameManager : MonoBehaviour
     }
 
 
+
+
     //Spawn The Stairs At The Random Location
     void SpawnStair(int num)
     {
@@ -148,14 +148,11 @@ public class GameManager : MonoBehaviour
     }
 
 
+
     //Stairs Moving Along The Direction       
     public void StairMove(int stairIndex, bool isChange, bool isleft)
     {
         if (player.isDie) return;
-
-        // [중요] gameStart가 true일 때만 게임 로직 진행 (원하시면 주석 해제)
-        // 지금은 버튼만 제어하고 움직임은 허용하려면 주석 상태 유지
-        // if (!gameStart) return; 
 
         //Move stairs to the right or left
         for (int i = 0; i < 20; i++)
@@ -212,46 +209,83 @@ public class GameManager : MonoBehaviour
     }
 
 
+    /*************  ✨ Windsurf Command 🌟  *************/
     /// <summary>
     /// 게임이 종료된 후 호출되는 함수
     /// </summary>
     void GameOver()
     {
-        // [로직 연결] 게임 오버 시 내부 상태를 false로 변경
-        gameStart = false;
-
+        // Animation
+        // Game over animation을 재생
+        //Animation
         anim[0].SetBool("GameOver", true);
+
+        // Player die animation을 재생
         player.anim.SetBool("Die", true);
+
+        // UI
+        // 게임 종료 후 점수를 표시
+        //UI
         ShowScore();
+
+        // Pause button을 숨기
         pauseBtn.SetActive(false);
+
+        // Player die flag를 true로 설정
         player.isDie = true;
+
+        // Player die animation을 재생
         player.MoveAnimation();
 
+        // Vibration을 설정할 경우에 Vibration을 호출
         if (vibrationOn) Vibration();
 
+        // 현재 점수를 저장
         dslManager.SaveMoney(player.money);
 
-        // API 호출 순서: 점수 제출 → 게임 종료(false 전송)
+        // API 호출 순서: 점수 제출 → 게임 종료
         if (apiManager != null)
         {
+            // 1. 점수 제출 (게임이 진행 중일 때)
             apiManager.SubmitScore(score, (success, scoreData) =>
             {
                 if (success && scoreData != null)
                 {
-                    Debug.Log($"점수 제출 성공 - 랭킹: {scoreData.rank}");
+                    Debug.Log($"점수 제출 성공 - 계단 수: {score}, 순위: {scoreData.rank}, 최고 기록: {scoreData.isNewBestScore}");
+
+                    if (scoreData.isNewBestScore)
+                    {
+                        Debug.Log("새로운 최고 기록 달성!");
+                    }
+                }
+                else
+                {
+                    Debug.LogWarning("점수 제출 실패");
                 }
 
-                // [API 연결] 게임 종료 신호 전송 (state: false)
+                // 2. 점수 제출 후 게임 종료 (state = 0)
                 apiManager.SendGameEnd(score, (endSuccess, response) =>
                 {
-                    Debug.Log("게임 종료 신호 전송 완료");
+                    if (endSuccess)
+                    {
+                        Debug.Log("게임 종료 API 호출 성공 - 계단 수: " + score);
+                    }
+                    else
+                    {
+                        Debug.LogWarning("게임 종료 API 호출 실패: " + response);
+                    }
                 });
             });
         }
 
+        // Invoke를 취소하여 GaugeBar animation을 중지
         CancelInvoke();
+
+        // 1.5초 후에 모든 UI를 숨기
+        CancelInvoke();  //GaugeBar Stopped
         Invoke("DisableUI", 1.5f);
     }
+    /*******  1a2ef763-87c7-4464-ad8d-353fbc44e9db  *******/
 
 
     //Show score after game over
@@ -261,6 +295,7 @@ public class GameManager : MonoBehaviour
         dslManager.SaveRankScore(score);
         bestScoreText.text = dslManager.GetBestScore().ToString();
 
+        //When the highest score is recorded
         if (score == dslManager.GetBestScore() && score != 0)
             UI[2].SetActive(true);
     }
@@ -269,70 +304,37 @@ public class GameManager : MonoBehaviour
 
     void Update()
     {
-        // =========================================================
-        // [컨트롤러 버튼 로직] 내부 변수(gameStart)와 API 통신 연결
-        // =========================================================
-
-        // Start 버튼 (JoystickButton9) -> 게임 시작
-        if (Input.GetKeyDown(KeyCode.JoystickButton9))
+        // J 키 입력 - 계단 오르기 (컨트롤러 R 버튼과 동일)
+        if (Input.GetKeyDown(KeyCode.J))
         {
-            // 1. 내부 상태 변경
-            gameStart = true;
-            Debug.Log("▶ Start 버튼 눌림: 게임 시작");
-
-            // 2. API로 시작 신호 전송 (True)
-            if (apiManager != null)
-            {
-                apiManager.SendGameStart((success, msg) =>
-                {
-                    Debug.Log($"API 게임 시작 전송 결과: {msg}");
-                });
-            }
-
-            // (필요 시) UI 숨기기나 게임 초기화 로직 추가 가능
-            // UI[0].SetActive(false); 
-        }
-
-        // Y 버튼 (JoystickButton3) -> 게임 종료/중지
-        if (Input.GetKeyDown(KeyCode.JoystickButton3))
-        {
-            // 1. 내부 상태 변경
-            gameStart = false;
-            Debug.Log("⏹ Y 버튼 눌림: 게임 중지");
-
-            // 2. API로 종료 신호 전송 (False)
-            if (apiManager != null)
-            {
-                // 점수 0점 혹은 현재 점수로 종료 처리
-                apiManager.SendGameEnd(score, (success, msg) =>
-                {
-                    Debug.Log($"API 게임 종료 전송 결과: {msg}");
-                });
-            }
-        }
-        // =========================================================
-
-
-        // J 키 / R 버튼 -> 계단 오르기
-        if (Input.GetKeyDown(KeyCode.J) || Input.GetKeyDown(KeyCode.JoystickButton5))
-        {
-            // gameStart가 true일 때만 입력을 받고 싶으면 아래 조건에 && gameStart 추가
             if (!player.isDie && !isGamePaused)
             {
                 player.Climb(false);
+                Debug.Log("[GameManager] J 키로 오르기 실행");
             }
         }
 
-        // K 키 / L 버튼 -> 방향 전환
-        if (Input.GetKeyDown(KeyCode.K) || Input.GetKeyDown(KeyCode.JoystickButton4))
+        // K 키 입력 - 방향 전환
+        if (Input.GetKeyDown(KeyCode.K))
         {
-            // 참고: 원래 코드의 JoystickButton5가 중복되어 있어, 기존 InputMapper 기준으로 수정 필요할 수 있음
-            // 여기서는 기존 로직 유지
             if (!player.isDie && !isGamePaused)
             {
                 player.Climb(true);
+                Debug.Log("[GameManager] K 키로 방향 전환 실행");
             }
         }
+
+        // 컨트롤러 R 버튼 (JoystickButton5) - 방향 전환 (K 키와 동일)
+        if (Input.GetKeyDown(KeyCode.JoystickButton5))
+        {
+            if (!player.isDie && !isGamePaused)
+            {
+                player.Climb(true);
+                Debug.Log("[GameManager] 컨트롤러 R 버튼으로 방향 전환 실행");
+            }
+        }
+
+        // 컨트롤러 L 버튼은 KeyboardInput.cs에서 URL 버튼으로 처리
     }
 
     public void BtnDown(GameObject btn)
@@ -348,7 +350,7 @@ public class GameManager : MonoBehaviour
         btn.transform.localScale = new Vector3(1f, 1f, 1f);
         if (btn.name == "PauseBtn")
         {
-            CancelInvoke();
+            CancelInvoke();  //Gauge Stopped
             isGamePaused = true;
         }
         if (btn.name == "ResumeBtn")
@@ -359,6 +361,8 @@ public class GameManager : MonoBehaviour
     }
 
 
+
+    //#.Setting
     public void SoundInit()
     {
         selectedIndex = dslManager.GetSelectedCharIndex();
