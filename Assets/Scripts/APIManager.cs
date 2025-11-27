@@ -143,11 +143,16 @@ public class APIManager : MonoBehaviour
         Debug.Log($"[API 호출 시작] URL: {url}");
         Debug.Log($"[API 호출 시작] backendURL: {backendURL}");
 
+        // 빈 JSON 객체를 body로 전송
+        string jsonData = "{}";
+        byte[] bodyRaw = System.Text.Encoding.UTF8.GetBytes(jsonData);
+
         UnityWebRequest request = new UnityWebRequest(url, "POST");
+        request.uploadHandler = new UploadHandlerRaw(bodyRaw);
         request.downloadHandler = new DownloadHandlerBuffer();
         request.SetRequestHeader("Content-Type", "application/json");
 
-        Debug.Log($"[API 호출 전] 요청 정보 - Method: POST, Headers: Content-Type=application/json");
+        Debug.Log($"[API 호출 전] 요청 정보 - Method: POST, Headers: Content-Type=application/json, Body: {jsonData}");
 
         yield return request.SendWebRequest();
 
